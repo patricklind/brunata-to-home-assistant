@@ -1,0 +1,13 @@
+{
+  "domain": "brunata_online",
+  "name": "Brunata Online",
+  "codeowners": ["@YukiElectronics"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/YukiElectronics/brunata-online",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/YukiElectronics/brunata-online/issues",
+  "requirements": [],
+  "version": "0.9.0"
+}
