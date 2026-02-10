@@ -6,20 +6,15 @@ DOMAIN = "brunata_online"
 DOMAIN_DATA = f"{DOMAIN}_data"
 VERSION = "0.9.1"
 
-ATTRIBUTION = "Data provided by http://jsonplaceholder.typicode.com/"
+ATTRIBUTION = "Data provided by online.brunata.com"
 ISSUE_URL = "https://github.com/YukiElectronics/ha-brunata/issues"
 
 # Icons
-ICON = "mdi:format-quote-close"
-
-# Device classes
-BINARY_SENSOR_DEVICE_CLASS = "connectivity"
+ICON = "mdi:home-thermometer-outline"
 
 # Platforms
-BINARY_SENSOR = "binary_sensor"
 SENSOR = "sensor"
-SWITCH = "switch"
-PLATFORMS = [BINARY_SENSOR, SENSOR, SWITCH]
+PLATFORMS = [SENSOR]
 
 # Configuration and options
 CONF_ENABLED = "enabled"
