@@ -1,13 +1,13 @@
 {
   "domain": "brunata_online",
   "name": "Brunata Online",
-  "codeowners": ["@YukiElectronics"],
+  "codeowners": ["@patricklind"],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/YukiElectronics/brunata-online",
+  "documentation": "https://github.com/patricklind/brunata-to-home-assistant",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/YukiElectronics/brunata-online/issues",
+  "issue_tracker": "https://github.com/patricklind/brunata-to-home-assistant/issues",
   "requirements": ["requests>=2.28.0"],
   "version": "0.9.0"
 }
