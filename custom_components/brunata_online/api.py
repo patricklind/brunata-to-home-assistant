@@ -327,15 +327,15 @@ class BrunataOnlineApiClient:
                 raise BrunataOnlineAuthError("Missing CSRF cookie during B2C auth")
 
             # 2) Extract transaction ID from the login HTML.
-            settings_match = re.search(r"var SETTINGS = (\\{[^;]*\\});", req_code.text)
+            settings_match = re.search(r"var SETTINGS = (\{[^;]*\});", req_code.text)
             if not settings_match:
                 raise BrunataOnlineAuthError("Failed to locate B2C SETTINGS in login page")
 
             settings_txt = settings_match.group(1)
-            trans_match = re.search(r"\"transId\"\\s*:\\s*\"([^\"]+)\"", settings_txt)
+            trans_match = re.search(r'"transId"\s*:\s*"([^"]+)"', settings_txt)
             if not trans_match:
                 # Fallback for slightly different formatting
-                trans_match = re.search(r"transId\"\\s*:\\s*\"([^\"]+)\"", settings_txt)
+                trans_match = re.search(r'transId"\s*:\s*"([^"]+)"', settings_txt)
             if not trans_match:
                 raise BrunataOnlineAuthError("Failed to extract transaction id from login page")
             transaction_id = trans_match.group(1)

@@ -5,7 +5,6 @@ For more details about this integration, please refer to
 https://github.com/YukiElectronics/ha-brunata
 """
 
-import asyncio
 from datetime import timedelta
 import logging
 
@@ -48,12 +47,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
-    for platform in PLATFORMS:
-        if entry.options.get(platform, True):
-            coordinator.platforms.append(platform)
-            hass.async_add_job(
-                hass.config_entries.async_forward_entry_setup(entry, platform)
-            )
+    coordinator.platforms = [p for p in PLATFORMS if entry.options.get(p, True)]
+    await hass.config_entries.async_forward_entry_setups(entry, coordinator.platforms)
 
     entry.add_update_listener(async_reload_entry)
     return True
@@ -84,15 +79,7 @@ class BrunataOnlineDataUpdateCoordinator(DataUpdateCoordinator):
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Handle removal of an entry."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    unloaded = all(
-        await asyncio.gather(
-            *[
-                hass.config_entries.async_forward_entry_unload(entry, platform)
-                for platform in PLATFORMS
-                if platform in coordinator.platforms
-            ]
-        )
-    )
+    unloaded = await hass.config_entries.async_unload_platforms(entry, coordinator.platforms)
     if unloaded:
         hass.data[DOMAIN].pop(entry.entry_id)
 
