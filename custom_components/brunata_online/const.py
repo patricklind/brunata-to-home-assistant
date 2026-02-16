@@ -4,7 +4,7 @@
 NAME = "Brunata Online"
 DOMAIN = "brunata_online"
 DOMAIN_DATA = f"{DOMAIN}_data"
-VERSION = "0.9.1"
+VERSION = "0.9.2"
 
 ATTRIBUTION = "Data provided by online.brunata.com"
 ISSUE_URL = "https://github.com/YukiElectronics/ha-brunata/issues"
