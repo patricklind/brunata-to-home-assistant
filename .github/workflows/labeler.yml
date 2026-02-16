@@ -6,6 +6,10 @@ on:
       - main
       - master
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   labeler:
     name: Labeler
@@ -17,4 +21,6 @@ jobs:
       - name: Run Labeler
         uses: crazy-max/ghaction-github-labeler@v5.1.0
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          yaml-file: .github/labels.yml
           skip-delete: true
