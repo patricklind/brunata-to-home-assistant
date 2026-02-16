@@ -12,7 +12,7 @@ import time
 from typing import Any
 import urllib.parse
 
-from aiohttp import ClientResponseError, ClientSession, ClientTimeout
+from aiohttp import ClientError, ClientResponseError, ClientSession, ClientTimeout
 import requests
 
 BASE_URL = "https://online.brunata.com"
@@ -39,7 +39,10 @@ DEFAULT_HEADERS: dict[str, str] = {
     "Connection": "keep-alive",
 }
 
-REQUEST_TIMEOUT = ClientTimeout(total=30)
+REQUEST_TIMEOUT = ClientTimeout(total=45, connect=15, sock_connect=15, sock_read=30)
+METER_REQUEST_TIMEOUT = ClientTimeout(total=10, connect=5, sock_connect=5, sock_read=8)
+RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+MAX_API_ATTEMPTS = 3
 
 
 class BrunataAuthError(Exception):
@@ -99,6 +102,14 @@ class BrunataOnlineClient:
             "attempts": attempts,
         }
 
+    async def async_validate_credentials(self) -> None:
+        """Validate credentials and basic API reachability.
+
+        This is intentionally lightweight for config flow validation.
+        """
+        await self._ensure_access_token()
+        await self._api_get_json("/consumer")
+
     async def _get_best_meter_rows(
         self,
     ) -> tuple[str | None, list[dict[str, Any]], list[dict[str, Any]]]:
@@ -119,7 +130,10 @@ class BrunataOnlineClient:
         for startdate in candidates:
             try:
                 rows = await self._api_get_json(
-                    "/consumer/meters", params={"startdate": startdate}
+                    "/consumer/meters",
+                    params={"startdate": startdate},
+                    timeout=METER_REQUEST_TIMEOUT,
+                    max_attempts=1,
                 )
                 if not isinstance(rows, list):
                     attempts.append(
@@ -163,33 +177,53 @@ class BrunataOnlineClient:
         return best_date, best_rows, attempts
 
     async def _api_get_json(
-        self, path: str, params: dict[str, str] | None = None
+        self,
+        path: str,
+        params: dict[str, str] | None = None,
+        *,
+        timeout: ClientTimeout | None = None,
+        max_attempts: int = MAX_API_ATTEMPTS,
     ) -> Any:
         await self._ensure_access_token()
 
         url = f"{API_BASE_URL}{path}"
-        headers = {
-            **DEFAULT_HEADERS,
-            "Authorization": f"Bearer {self._token.access_token}",
-            "Accept": "application/json, text/plain, */*",
-        }
+        last_error: Exception | None = None
+        request_timeout = timeout or REQUEST_TIMEOUT
 
-        try:
-            async with self._session.get(
-                url, params=params, headers=headers, timeout=REQUEST_TIMEOUT
-            ) as resp:
-                resp.raise_for_status()
-                return await resp.json()
-        except ClientResponseError as err:
-            if err.status == 401:
-                await self._ensure_access_token(force=True)
-                headers["Authorization"] = f"Bearer {self._token.access_token}"
+        for attempt in range(1, max_attempts + 1):
+            headers = {
+                **DEFAULT_HEADERS,
+                "Authorization": f"Bearer {self._token.access_token}",
+                "Accept": "application/json, text/plain, */*",
+            }
+            try:
                 async with self._session.get(
-                    url, params=params, headers=headers, timeout=REQUEST_TIMEOUT
+                    url, params=params, headers=headers, timeout=request_timeout
                 ) as resp:
                     resp.raise_for_status()
                     return await resp.json()
-            raise
+            except ClientResponseError as err:
+                if err.status == 401:
+                    await self._ensure_access_token(force=True)
+                    continue
+                if (
+                    err.status in RETRYABLE_STATUS_CODES
+                    and attempt < max_attempts
+                ):
+                    last_error = err
+                    await asyncio.sleep(attempt)
+                    continue
+                raise
+            except (asyncio.TimeoutError, TimeoutError, ClientError) as err:
+                last_error = err
+                if attempt < max_attempts:
+                    await asyncio.sleep(attempt)
+                    continue
+                raise
+
+        if last_error:
+            raise last_error
+        raise BrunataAuthError(f"Unexpected empty API response loop for {path}")
 
     async def _ensure_access_token(self, force: bool = False) -> None:
         async with self._token_lock:
@@ -383,23 +417,26 @@ class BrunataOnlineClient:
             raise BrunataAuthError(f"Token exchange failed ({last_error})")
 
     @staticmethod
-    def _build_date_candidates(days_back: int = 14) -> list[str]:
-        now = datetime.now(timezone.utc)
+    def _build_date_candidates() -> list[str]:
+        today: date = datetime.now(timezone.utc).date()
+        first_of_month = today.replace(day=1)
+        first_of_previous_month = (first_of_month - timedelta(days=1)).replace(day=1)
+
+        anchor_days = [
+            today - timedelta(days=14),
+            today - timedelta(days=13),
+            today - timedelta(days=7),
+            today - timedelta(days=1),
+            today,
+            first_of_month,
+            first_of_previous_month,
+        ]
+
         result: list[str] = []
-        for offset in range(days_back, -1, -1):
-            day: date = (now - timedelta(days=offset)).date()
+        for day in anchor_days:
             iso_day = day.isoformat()
-            result.extend(
-                [
-                    iso_day,
-                    f"{iso_day}T00:00:00Z",
-                    f"{iso_day}T00:00:00.000Z",
-                    f"{iso_day}T00:00:00+01:00",
-                    f"{iso_day}T00:00:00.000+01:00",
-                    f"{iso_day}T12:00:00+01:00",
-                    f"{iso_day}T23:59:59+01:00",
-                ]
-            )
+            result.extend([f"{iso_day}T00:00:00Z", iso_day])
+
         # preserve order while removing duplicates
         return list(dict.fromkeys(result))
 

@@ -56,7 +56,7 @@ class BrunataOnlineConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         try:
             session = async_get_clientsession(self.hass)
             client = BrunataOnlineClient(username, password, session)
-            await client.async_fetch_data()
+            await client.async_validate_credentials()
             return "ok"
         except BrunataAuthError as err:
             _LOGGER.warning("Brunata authentication failed: %s", err)
