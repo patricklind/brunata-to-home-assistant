@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
@@ -10,6 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
 from . import BrunataDataCoordinator
 from .const import DOMAIN
@@ -106,6 +108,54 @@ def _normalize_reading_value(value: Any) -> float | int | None:
     return None
 
 
+def _parse_reading_datetime(value: Any) -> datetime | None:
+    """Parse Brunata reading timestamp to aware UTC datetime."""
+    if value is None:
+        return None
+
+    text = str(value).strip()
+    if not text:
+        return None
+    if text.endswith("Z"):
+        text = f"{text[:-1]}+00:00"
+
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _extract_official_point(row: dict[str, Any] | None) -> tuple[datetime, float] | None:
+    """Extract (reading_date, reading_value) for interpolation."""
+    if not isinstance(row, dict):
+        return None
+
+    reading = row.get("reading")
+    if not isinstance(reading, dict):
+        return None
+
+    reading_value = _normalize_reading_value(reading.get("value"))
+    reading_date = _parse_reading_datetime(reading.get("readingDate"))
+
+    if reading_value is None or reading_date is None:
+        return None
+    return reading_date, float(reading_value)
+
+
+def _supports_distributed_sensor(row: dict[str, Any]) -> bool:
+    """Only water/heating meters get distributed-estimate helper sensors."""
+    meter = row.get("meter") if isinstance(row.get("meter"), dict) else {}
+    medium = _meter_medium_label(meter.get("meterType"), meter.get("allocationUnit"))
+    unit = _unit_from_code(meter.get("unit"))
+    if medium not in {"cold_water", "hot_water", "water", "heating"}:
+        return False
+    return unit in {"m³", "kWh", "units"}
+
+
 def _row_key(row: dict[str, Any]) -> tuple[str, str, str, str]:
     meter = row.get("meter") if isinstance(row.get("meter"), dict) else {}
     return (
@@ -124,19 +174,27 @@ async def async_setup_entry(
     """Set up Brunata sensors from config entry."""
     coordinator: BrunataDataCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    known_keys: set[tuple[str, str, str, str]] = set()
+    known_sensors: set[tuple[tuple[str, str, str, str], str]] = set()
 
     def _add_new_entities() -> None:
         meters = (coordinator.data or {}).get("meters") or []
-        new_entities: list[BrunataMeterSensor] = []
+        new_entities: list[SensorEntity] = []
         for row in meters:
             if not isinstance(row, dict):
                 continue
             key = _row_key(row)
-            if key in known_keys:
-                continue
-            known_keys.add(key)
-            new_entities.append(BrunataMeterSensor(coordinator, key))
+            raw_token = (key, "raw")
+            if raw_token not in known_sensors:
+                known_sensors.add(raw_token)
+                new_entities.append(BrunataMeterSensor(coordinator, key))
+
+            distributed_token = (key, "distributed")
+            if (
+                distributed_token not in known_sensors
+                and _supports_distributed_sensor(row)
+            ):
+                known_sensors.add(distributed_token)
+                new_entities.append(BrunataDistributedMeterSensor(coordinator, key))
 
         if new_entities:
             async_add_entities(new_entities)
@@ -279,3 +337,99 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
             ).strip(),
             serial_number=self._meter_serial,
         )
+
+
+class BrunataDistributedMeterSensor(BrunataMeterSensor):
+    """Estimated distributed total between Brunata daily meter updates."""
+
+    def __init__(
+        self,
+        coordinator: BrunataDataCoordinator,
+        meter_key: tuple[str, str, str, str],
+    ) -> None:
+        super().__init__(coordinator, meter_key)
+        self._attr_unique_id = f"{self._attr_unique_id}_distributed"
+        medium_label = _meter_sensor_name(self._meter_medium)
+        self._attr_name = f"{medium_label} distributed total"
+
+        self._official_point: tuple[datetime, float] | None = None
+        self._anchor_time: datetime | None = None
+        self._anchor_value: float | None = None
+        self._rate_per_second: float = 0.0
+
+        self._ingest_official_row(self._current_row)
+
+    def _ingest_official_row(self, row: dict[str, Any] | None) -> None:
+        point = _extract_official_point(row)
+        if point is None:
+            return
+
+        if self._official_point is None:
+            self._official_point = point
+            self._anchor_time, self._anchor_value = point
+            self._rate_per_second = 0.0
+            return
+
+        prev_time, prev_value = self._official_point
+        current_time, current_value = point
+        if current_time <= prev_time:
+            return
+
+        self._official_point = point
+        self._anchor_time = current_time
+        self._anchor_value = current_value
+
+        elapsed_seconds = (current_time - prev_time).total_seconds()
+        value_delta = current_value - prev_value
+        if elapsed_seconds <= 0 or value_delta < 0:
+            self._rate_per_second = 0.0
+            return
+
+        self._rate_per_second = value_delta / elapsed_seconds
+
+    def _round_estimate(self, value: float) -> float:
+        if self._native_unit in {"m³", "kWh"}:
+            return round(value, 3)
+        return round(value, 2)
+
+    @property
+    def native_value(self):
+        if self._anchor_value is None or self._anchor_time is None:
+            return super().native_value
+
+        if self._rate_per_second <= 0:
+            return self._round_estimate(self._anchor_value)
+
+        now = dt_util.utcnow()
+        elapsed_seconds = max((now - self._anchor_time).total_seconds(), 0.0)
+        estimated_total = self._anchor_value + (self._rate_per_second * elapsed_seconds)
+        if estimated_total < self._anchor_value:
+            estimated_total = self._anchor_value
+        return self._round_estimate(estimated_total)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        attrs = dict(super().extra_state_attributes)
+        attrs.update(
+            {
+                "distributed_estimate": True,
+                "distribution_rate_per_hour": round(self._rate_per_second * 3600, 6),
+                "distribution_anchor_time": (
+                    self._anchor_time.isoformat() if self._anchor_time else None
+                ),
+                "distribution_anchor_value": self._anchor_value,
+            }
+        )
+        return attrs
+
+    @property
+    def state_class(self) -> SensorStateClass | None:
+        if _is_water_medium(self._meter_medium):
+            return SensorStateClass.TOTAL_INCREASING
+        if _is_heating_medium(self._meter_medium):
+            return SensorStateClass.TOTAL_INCREASING
+        return None
+
+    def _handle_coordinator_update(self) -> None:
+        self._ingest_official_row(self._current_row)
+        super()._handle_coordinator_update()
