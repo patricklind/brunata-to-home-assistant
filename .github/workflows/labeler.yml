@@ -5,10 +5,12 @@ on:
     branches:
       - main
       - master
+  workflow_dispatch:
 
 permissions:
   contents: read
   issues: write
+  pull-requests: write
 
 jobs:
   labeler:
@@ -16,11 +18,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v4
 
       - name: Run Labeler
-        uses: crazy-max/ghaction-github-labeler@v5.1.0
+        uses: crazy-max/ghaction-github-labeler@v5.3.0
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.LABELER_TOKEN || secrets.GITHUB_TOKEN }}
           yaml-file: .github/labels.yml
           skip-delete: true
