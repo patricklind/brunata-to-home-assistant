@@ -15,6 +15,35 @@ from . import BrunataDataCoordinator
 from .const import DOMAIN
 
 
+def _meter_medium_label(meter_type: str | None, allocation_unit: str | None) -> str:
+    """Map Brunata meter type text to a stable medium label."""
+    meter_type_text = (meter_type or "").strip().lower()
+    allocation_unit_text = (allocation_unit or "").strip().lower()
+
+    if "cold water" in meter_type_text or "koldt vand" in meter_type_text:
+        return "cold_water"
+    if "hot water" in meter_type_text or "varmt vand" in meter_type_text:
+        return "hot_water"
+    if "heating" in meter_type_text or "opvarmning" in meter_type_text:
+        return "heating"
+
+    if "water" in meter_type_text or "vand" in meter_type_text:
+        return "water"
+    if allocation_unit_text == "w":
+        return "water"
+    return "unknown"
+
+
+def _meter_sensor_name(medium: str) -> str:
+    """User-facing sensor name based on classified meter medium."""
+    return {
+        "cold_water": "Cold water",
+        "hot_water": "Hot water",
+        "heating": "Heating",
+        "water": "Water",
+    }.get(medium, "Reading")
+
+
 def _row_key(row: dict[str, Any]) -> tuple[str, str, str, str]:
     meter = row.get("meter") if isinstance(row.get("meter"), dict) else {}
     return (
@@ -75,11 +104,15 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
         )
         self._meter_no = str(meter_no or self._meter_identifier)
         self._placement = str(meter.get("placement") or "Meter")
+        self._meter_medium = _meter_medium_label(
+            meter.get("meterType"),
+            meter.get("allocationUnit"),
+        )
 
         self._attr_unique_id = (
             f"{DOMAIN}_{meter_key[0]}_{meter_key[1]}_{meter_key[2]}_{meter_key[3]}"
         )
-        self._attr_name = "Reading"
+        self._attr_name = _meter_sensor_name(self._meter_medium)
 
     @property
     def _current_row(self) -> dict[str, Any] | None:
@@ -133,6 +166,10 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
             "meter_sequence_no": meter.get("meterSequenceNo"),
             "placement": meter.get("placement"),
             "meter_type": meter.get("meterType"),
+            "meter_medium": _meter_medium_label(
+                str(meter.get("meterType") or ""),
+                str(meter.get("allocationUnit") or ""),
+            ),
             "allocation_unit": meter.get("allocationUnit"),
             "unit_code": meter.get("unit"),
             "mounting_date": meter.get("mountingDate"),
@@ -156,6 +193,9 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
             identifiers={(DOMAIN, f"meter_{self._meter_identifier}")},
             manufacturer="Brunata",
             model=meter_type,
-            name=f"{self._placement} {self._meter_no}".strip(),
+            name=(
+                f"{self._placement} {self._meter_no} "
+                f"({_meter_sensor_name(self._meter_medium)})"
+            ).strip(),
             serial_number=self._meter_no,
         )
