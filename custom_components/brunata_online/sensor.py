@@ -181,6 +181,16 @@ def _supports_distributed_sensor(row: dict[str, Any]) -> bool:
     return unit in {"m³", "kWh", "units"}
 
 
+def _supports_30d_consumption_sensor(row: dict[str, Any]) -> bool:
+    """Only known water/heating meters get rolling 30-day sensors."""
+    meter = row.get("meter") if isinstance(row.get("meter"), dict) else {}
+    medium = _meter_medium_label(meter.get("meterType"), meter.get("allocationUnit"))
+    unit = _unit_from_code(meter.get("unit"))
+    if medium not in {"cold_water", "hot_water", "water", "heating"}:
+        return False
+    return unit in {"m³", "kWh", "units"}
+
+
 def _row_key(row: dict[str, Any]) -> tuple[str, str, str, str]:
     meter = row.get("meter") if isinstance(row.get("meter"), dict) else {}
     return (
@@ -249,6 +259,14 @@ async def async_setup_entry(
             ):
                 known_sensors.add(distributed_token)
                 new_entities.append(BrunataDistributedMeterSensor(coordinator, key))
+
+            last_30_days_token = (key, "last_30_days")
+            if (
+                last_30_days_token not in known_sensors
+                and _supports_30d_consumption_sensor(row)
+            ):
+                known_sensors.add(last_30_days_token)
+                new_entities.append(BrunataLast30DaysConsumptionSensor(coordinator, key))
 
         if new_entities:
             async_add_entities(new_entities)
@@ -503,3 +521,60 @@ class BrunataDistributedMeterSensor(BrunataMeterSensor):
     def _handle_coordinator_update(self) -> None:
         self._ingest_official_row(self._current_row)
         super()._handle_coordinator_update()
+
+
+class BrunataLast30DaysConsumptionSensor(BrunataMeterSensor):
+    """Rolling 30-day consumption based on Brunata daily points."""
+
+    def __init__(
+        self,
+        coordinator: BrunataDataCoordinator,
+        meter_key: tuple[str, str, str, str],
+    ) -> None:
+        super().__init__(coordinator, meter_key)
+        self._attr_unique_id = f"{self._attr_unique_id}_last_30_days"
+
+        if _is_heating_medium(self._meter_medium):
+            label = "Heating energy" if self._native_unit == "kWh" else "Heating index"
+        else:
+            label = _meter_sensor_name(self._meter_medium)
+        self._attr_name = f"{label} last 30 days"
+
+    @property
+    def native_value(self):
+        points = _history_points_for_meter(self.coordinator.data, self._meter_key)
+        return _history_delta(points)
+
+    @property
+    def state_class(self) -> SensorStateClass | None:
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        attrs = dict(super().extra_state_attributes)
+        points = _history_points_for_meter(self.coordinator.data, self._meter_key)
+        first_point = points[0] if points else None
+        last_point = points[-1] if points else None
+        attrs.update(
+            {
+                "history_window_days": 30,
+                "history_point_count": len(points),
+                "history_start_date": (
+                    first_point.get("date") if isinstance(first_point, dict) else None
+                ),
+                "history_end_date": (
+                    last_point.get("date") if isinstance(last_point, dict) else None
+                ),
+                "history_start_value": (
+                    _normalize_reading_value(first_point.get("value"))
+                    if isinstance(first_point, dict)
+                    else None
+                ),
+                "history_end_value": (
+                    _normalize_reading_value(last_point.get("value"))
+                    if isinstance(last_point, dict)
+                    else None
+                ),
+            }
+        )
+        return attrs
