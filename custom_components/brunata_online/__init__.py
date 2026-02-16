@@ -1,99 +1,77 @@
-"""
-Custom integration to integrate Brunata Online with Home Assistant.
+"""Brunata Online integration for Home Assistant."""
 
-For more details about this integration, please refer to
-https://github.com/patricklind/brunata-to-home-assistant
-"""
+from __future__ import annotations
 
-from datetime import timedelta
 import logging
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.config import ConfigType
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .api import BrunataOnlineApiClient
-from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN, PLATFORMS, STARTUP_MESSAGE
+from .api import BrunataAuthError, BrunataOnlineClient
+from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN, PLATFORMS, SCAN_INTERVAL
 
-SCAN_INTERVAL = timedelta(minutes=15)
-
-_LOGGER: logging.Logger = logging.getLogger(__package__)
+_LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup(hass: HomeAssistant, config: ConfigType):
-    """Set up this integration using YAML is not supported."""
+type BrunataConfigEntry = ConfigEntry
+
+
+async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
+    """Set up integration via YAML (not used)."""
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
-    """Set up this integration using UI."""
-    if hass.data.get(DOMAIN) is None:
-        hass.data.setdefault(DOMAIN, {})
-        _LOGGER.info(STARTUP_MESSAGE)
-
-    username = entry.data.get(CONF_USERNAME)
-    password = entry.data.get(CONF_PASSWORD)
+async def async_setup_entry(hass: HomeAssistant, entry: BrunataConfigEntry) -> bool:
+    """Set up Brunata from a config entry."""
+    hass.data.setdefault(DOMAIN, {})
 
     session = async_get_clientsession(hass)
-    client = BrunataOnlineApiClient(username, password, session)
+    client = BrunataOnlineClient(
+        entry.data[CONF_USERNAME],
+        entry.data[CONF_PASSWORD],
+        session,
+    )
 
-    coordinator = BrunataOnlineDataUpdateCoordinator(hass, client=client)
-    await coordinator.async_refresh()
+    coordinator = BrunataDataCoordinator(hass, client)
+    await coordinator.async_config_entry_first_refresh()
 
     if not coordinator.last_update_success:
-        raise ConfigEntryNotReady
+        raise ConfigEntryNotReady("Initial Brunata refresh failed")
 
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
-    coordinator.platforms = [p for p in PLATFORMS if entry.options.get(p, True)]
-    await hass.config_entries.async_forward_entry_setups(entry, coordinator.platforms)
-
-    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
-class BrunataOnlineDataUpdateCoordinator(DataUpdateCoordinator):
-    """Class to manage fetching data from the API."""
+async def async_unload_entry(hass: HomeAssistant, entry: BrunataConfigEntry) -> bool:
+    """Unload Brunata config entry."""
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unload_ok:
+        hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
+    return unload_ok
 
-    def __init__(
-        self,
-        hass: HomeAssistant,
-        client: BrunataOnlineApiClient,
-    ) -> None:
-        """Initialize."""
-        self.api = client
-        self.platforms = []
 
-        super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=SCAN_INTERVAL)
+class BrunataDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
+    """Coordinator for Brunata data updates."""
 
-    async def _async_update_data(self):
-        """Update data via library."""
+    def __init__(self, hass: HomeAssistant, client: BrunataOnlineClient) -> None:
+        self.client = client
+        super().__init__(
+            hass,
+            logger=_LOGGER,
+            name=DOMAIN,
+            update_interval=SCAN_INTERVAL,
+        )
+
+    async def _async_update_data(self) -> dict[str, Any]:
         try:
-            return await self.api.async_get_data()
-        except Exception as exception:
-            raise UpdateFailed() from exception
-
-
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Handle removal of an entry."""
-    domain_data = hass.data.get(DOMAIN) or {}
-    coordinator = domain_data.get(entry.entry_id)
-    if coordinator is None:
-        return True
-
-    unloaded = await hass.config_entries.async_unload_platforms(
-        entry, coordinator.platforms
-    )
-    if unloaded:
-        domain_data.pop(entry.entry_id, None)
-
-    return unloaded
-
-
-async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Reload config entry."""
-    await async_unload_entry(hass, entry)
-    await async_setup_entry(hass, entry)
+            return await self.client.async_fetch_data()
+        except BrunataAuthError as err:
+            raise UpdateFailed(f"Authentication failed: {err}") from err
+        except Exception as err:  # pylint: disable=broad-except
+            raise UpdateFailed(f"Failed to update Brunata data: {err}") from err

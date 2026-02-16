@@ -1,51 +1,26 @@
-# Brunata Online Custom Integration for Home Assistant
+# Brunata Online (Home Assistant)
 
-[![hacs][hacsbadge]][hacs]
-[![GitHub Release][releases-shield]][releases]
-[![License][license-shield]](LICENSE)
+Custom integration for Home Assistant that reads meter values from [online.brunata.com](https://online.brunata.com).
 
-This integration allows Home Assistant to read meter values from the [Brunata Online][brunata] Portal.
-Brunata is an IoT-enabled utilities provider that's part of the Minol-ZENNER Group, mostly providing utilities to housing cooperatives in the EEA.
+## Install with HACS
 
-This integration is not endorsed by Brunata and could stop functioning at any time.
+1. Open **HACS** in Home Assistant.
+2. Go to **Integrations**.
+3. Click menu (three dots) -> **Custom repositories**.
+4. Add repository URL:
+   - `https://github.com/patricklind/brunata-to-home-assistant`
+5. Category: **Integration**.
+6. Install **Brunata Online**.
+7. Restart Home Assistant.
 
-## Supported meters
+## Configure
 
-- Heating meters (units)
-- Cold water meters (m3)
-- Hot water meters (m3)
-- Energy meters (kWh)
+1. Go to **Settings** -> **Devices & Services** -> **Add Integration**.
+2. Search for **Brunata Online**.
+3. Enter your Brunata username/email and password.
 
-Each meter is exposed as a Home Assistant sensor with the latest reading.
+## Notes
 
-## Installation via HACS
-
-1. Open HACS in Home Assistant
-2. Click the 3-dot menu and select **Custom repositories**
-3. Paste: `https://github.com/patricklind/brunata-to-home-assistant`
-4. Category: **Integration**
-5. Click **Add**, then **Download**
-6. Restart Home Assistant
-
-## Configuration
-
-1. Go to **Settings** > **Devices & Services** > **Add Integration**
-2. Search for **Brunata Online**
-3. Enter your Brunata Online credentials (the same you use on [online.brunata.com][brunata])
-
-## Credits
-
-Project repository: [ha-brunata][ha-brunata].
-
-Azure AD B2C login flow based on [@itchannel](https://github.com/itchannel)'s [FordPass Integration][fordpass].
-
----
-
-[brunata]: https://online.brunata.com
-[ha-brunata]: https://github.com/patricklind/brunata-to-home-assistant
-[fordpass]: https://github.com/itchannel/fordpass-ha
-[hacs]: https://hacs.xyz
-[hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge
-[license-shield]: https://img.shields.io/github/license/patricklind/brunata-to-home-assistant.svg?style=for-the-badge
-[releases-shield]: https://img.shields.io/github/release/patricklind/brunata-to-home-assistant.svg?style=for-the-badge
-[releases]: https://github.com/patricklind/brunata-to-home-assistant/releases
+- The integration logs in using Brunata's web auth flow.
+- Data is fetched from the resident meter endpoints.
+- If Brunata changes web endpoints, this integration may need updates.
