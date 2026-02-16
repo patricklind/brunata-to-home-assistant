@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
@@ -54,6 +54,35 @@ def _meter_sensor_name(medium: str) -> str:
         "heating": "Heating",
         "water": "Water",
     }.get(medium, "Reading")
+
+
+def _is_water_medium(medium: str) -> bool:
+    return medium in {"cold_water", "hot_water", "water"}
+
+
+def _normalize_reading_value(value: Any) -> float | int | None:
+    """Normalize Brunata reading values to numeric values for statistics."""
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return value
+    if isinstance(value, str):
+        text = value.strip().replace(" ", "")
+        if not text:
+            return None
+        if "," in text and "." in text:
+            if text.rfind(",") > text.rfind("."):
+                text = text.replace(".", "").replace(",", ".")
+            else:
+                text = text.replace(",", "")
+        elif "," in text:
+            # Brunata may return decimal-comma values for water readings.
+            text = text.replace(",", ".")
+        try:
+            return float(text)
+        except ValueError:
+            return None
+    return None
 
 
 def _row_key(row: dict[str, Any]) -> tuple[str, str, str, str]:
@@ -150,7 +179,7 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
         if not row:
             return None
         reading = row.get("reading") if isinstance(row.get("reading"), dict) else {}
-        return reading.get("value")
+        return _normalize_reading_value(reading.get("value"))
 
     @property
     def native_unit_of_measurement(self) -> str | None:
@@ -167,6 +196,18 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
             return "units"
         if unit_code in {"4", "9"}:
             return "kWh"
+        return None
+
+    @property
+    def device_class(self) -> SensorDeviceClass | None:
+        if _is_water_medium(self._meter_medium):
+            return SensorDeviceClass.WATER
+        return None
+
+    @property
+    def state_class(self) -> SensorStateClass | None:
+        if _is_water_medium(self._meter_medium):
+            return SensorStateClass.TOTAL_INCREASING
         return None
 
     @property
