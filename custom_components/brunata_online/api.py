@@ -42,7 +42,7 @@ REQUEST_TIMEOUT = ClientTimeout(total=45, connect=15, sock_connect=15, sock_read
 METER_REQUEST_TIMEOUT = ClientTimeout(total=10, connect=5, sock_connect=5, sock_read=8)
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 MAX_API_ATTEMPTS = 3
-AUTH_REQUEST_TIMEOUT: tuple[int, int] = (15, 60)
+AUTH_REQUEST_TIMEOUT: tuple[int, int] = (30, 90)
 AUTH_MAX_ATTEMPTS = 3
 
 
