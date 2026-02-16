@@ -23,4 +23,6 @@ Custom integration for Home Assistant that reads meter values from [online.bruna
 
 - The integration logs in using Brunata's web auth flow.
 - Data is fetched from the resident meter endpoints.
+- Each meter sensor includes 30-day history in attributes (`history_30d_points`) and
+  calculated 30-day consumption (`consumption_last_30_days`) when available.
 - If Brunata changes web endpoints, this integration may need updates.

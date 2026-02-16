@@ -5,7 +5,11 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
@@ -148,7 +152,9 @@ def _parse_reading_datetime(value: Any) -> datetime | None:
     return parsed.astimezone(timezone.utc)
 
 
-def _extract_official_point(row: dict[str, Any] | None) -> tuple[datetime, float] | None:
+def _extract_official_point(
+    row: dict[str, Any] | None
+) -> tuple[datetime, float] | None:
     """Extract (reading_date, reading_value) for interpolation."""
     if not isinstance(row, dict):
         return None
@@ -185,6 +191,36 @@ def _row_key(row: dict[str, Any]) -> tuple[str, str, str, str]:
     )
 
 
+def _history_key_from_row_key(meter_key: tuple[str, str, str, str]) -> str:
+    return "|".join(meter_key)
+
+
+def _history_points_for_meter(
+    coordinator_data: dict[str, Any] | None,
+    meter_key: tuple[str, str, str, str],
+) -> list[dict[str, Any]]:
+    history = (coordinator_data or {}).get("meter_history_30d")
+    if not isinstance(history, dict):
+        return []
+    points = history.get(_history_key_from_row_key(meter_key))
+    if not isinstance(points, list):
+        return []
+    return [point for point in points if isinstance(point, dict)]
+
+
+def _history_delta(points: list[dict[str, Any]]) -> float | None:
+    if len(points) < 2:
+        return None
+    first_value = _normalize_reading_value(points[0].get("value"))
+    last_value = _normalize_reading_value(points[-1].get("value"))
+    if first_value is None or last_value is None:
+        return None
+    delta = float(last_value) - float(first_value)
+    if delta < 0:
+        return None
+    return round(delta, 3)
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -208,9 +244,8 @@ async def async_setup_entry(
                 new_entities.append(BrunataMeterSensor(coordinator, key))
 
             distributed_token = (key, "distributed")
-            if (
-                distributed_token not in known_sensors
-                and _supports_distributed_sensor(row)
+            if distributed_token not in known_sensors and _supports_distributed_sensor(
+                row
             ):
                 known_sensors.add(distributed_token)
                 new_entities.append(BrunataDistributedMeterSensor(coordinator, key))
@@ -319,8 +354,16 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
 
         meter = row.get("meter") if isinstance(row.get("meter"), dict) else {}
         reading = row.get("reading") if isinstance(row.get("reading"), dict) else {}
+        history_points = _history_points_for_meter(
+            self.coordinator.data, self._meter_key
+        )
+        history_delta = _history_delta(history_points)
+        history_meta = (self.coordinator.data or {}).get("meter_history_meta")
+        history_updated_at = (
+            history_meta.get("updated_at") if isinstance(history_meta, dict) else None
+        )
 
-        return {
+        attrs = {
             "meter_id": meter.get("meterId"),
             "meter_no": meter.get("meterNo"),
             "serial_number": self._meter_serial,
@@ -339,7 +382,13 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
             "reading_id": reading.get("readingId"),
             "reading_date": reading.get("readingDate"),
             "best_startdate": (self.coordinator.data or {}).get("best_startdate"),
+            "history_30d_points": history_points,
+            "history_30d_point_count": len(history_points),
+            "history_30d_updated_at": history_updated_at,
         }
+        if history_delta is not None:
+            attrs["consumption_last_30_days"] = history_delta
+        return attrs
 
     @property
     def device_info(self) -> DeviceInfo:

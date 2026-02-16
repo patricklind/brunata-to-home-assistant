@@ -40,10 +40,14 @@ DEFAULT_HEADERS: dict[str, str] = {
 
 REQUEST_TIMEOUT = ClientTimeout(total=45, connect=15, sock_connect=15, sock_read=30)
 METER_REQUEST_TIMEOUT = ClientTimeout(total=10, connect=5, sock_connect=5, sock_read=8)
+HISTORY_REQUEST_TIMEOUT = ClientTimeout(total=8, connect=3, sock_connect=3, sock_read=5)
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 MAX_API_ATTEMPTS = 3
 AUTH_REQUEST_TIMEOUT: tuple[int, int] = (30, 90)
 AUTH_MAX_ATTEMPTS = 3
+HISTORY_DAYS_BACK = 30
+HISTORY_REFRESH_INTERVAL = timedelta(hours=12)
+MAX_HISTORY_PARALLEL_REQUESTS = 4
 
 
 class BrunataAuthError(Exception):
@@ -79,6 +83,8 @@ class BrunataOnlineClient:
         self._token = _TokenState()
         self._token_lock = asyncio.Lock()
         self._best_startdate: str | None = None
+        self._history_cache: dict[str, list[dict[str, Any]]] = {}
+        self._history_updated_at: datetime | None = None
 
     async def async_fetch_data(self) -> dict[str, Any]:
         """Fetch consumer and meter data."""
@@ -97,6 +103,9 @@ class BrunataOnlineClient:
             filtered.append(row)
 
         filtered.sort(key=lambda x: self._meter_sequence(x))
+        meter_history_30d, meter_history_meta = await self._get_meter_history_30d(
+            filtered
+        )
 
         return {
             "fetched_at": datetime.now(timezone.utc).isoformat(),
@@ -105,6 +114,8 @@ class BrunataOnlineClient:
             "meters": filtered,
             "non_null_readings": self._count_non_null_readings(filtered),
             "attempts": attempts,
+            "meter_history_30d": meter_history_30d,
+            "meter_history_meta": meter_history_meta,
         }
 
     async def async_validate_credentials(self) -> None:
@@ -181,6 +192,117 @@ class BrunataOnlineClient:
 
         return best_date, best_rows, attempts
 
+    async def _get_meter_history_30d(
+        self, current_rows: list[dict[str, Any]]
+    ) -> tuple[dict[str, list[dict[str, Any]]], dict[str, Any]]:
+        now_utc = datetime.now(timezone.utc)
+        current_meter_keys: set[str] = set()
+        for row in current_rows:
+            meter_key = self._meter_history_key(row)
+            if meter_key:
+                current_meter_keys.add(meter_key)
+
+        cache_is_fresh = (
+            self._history_updated_at is not None
+            and (now_utc - self._history_updated_at) < HISTORY_REFRESH_INTERVAL
+        )
+        if cache_is_fresh and current_meter_keys.issubset(self._history_cache.keys()):
+            return self._history_cache, {
+                "days_back": HISTORY_DAYS_BACK,
+                "cached": True,
+                "updated_at": self._history_updated_at.isoformat(),
+                "requested_days": 0,
+                "successful_days": 0,
+                "failed_days": 0,
+            }
+
+        day_values: list[date] = [
+            (now_utc - timedelta(days=offset)).date()
+            for offset in range(HISTORY_DAYS_BACK, -1, -1)
+        ]
+        startdate_suffix = self._history_startdate_suffix()
+        semaphore = asyncio.Semaphore(MAX_HISTORY_PARALLEL_REQUESTS)
+
+        async def _fetch_day(
+            day_value: date,
+        ) -> tuple[str, list[dict[str, Any]] | None]:
+            async with semaphore:
+                startdate = f"{day_value.isoformat()}{startdate_suffix}"
+                try:
+                    rows = await self._api_get_json(
+                        "/consumer/meters",
+                        params={"startdate": startdate},
+                        timeout=HISTORY_REQUEST_TIMEOUT,
+                        max_attempts=1,
+                    )
+                except Exception:  # pylint: disable=broad-except
+                    return day_value.isoformat(), None
+                if not isinstance(rows, list):
+                    return day_value.isoformat(), []
+                return day_value.isoformat(), rows
+
+        day_results = await asyncio.gather(*(_fetch_day(day) for day in day_values))
+
+        meter_daily: dict[str, dict[str, dict[str, Any]]] = {}
+        successful_days = 0
+        failed_days = 0
+
+        for day_iso, rows in day_results:
+            if rows is None:
+                failed_days += 1
+                continue
+            successful_days += 1
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                meter_key = self._meter_history_key(row)
+                if not meter_key:
+                    continue
+                reading = row.get("reading")
+                if not isinstance(reading, dict):
+                    continue
+                value = _to_float(reading.get("value"))
+                if value is None:
+                    continue
+                meter_daily.setdefault(meter_key, {})[day_iso] = {
+                    "date": day_iso,
+                    "value": value,
+                    "reading_date": reading.get("readingDate"),
+                }
+
+        if successful_days == 0 and self._history_cache:
+            return self._history_cache, {
+                "days_back": HISTORY_DAYS_BACK,
+                "cached": True,
+                "stale_cache": True,
+                "updated_at": (
+                    self._history_updated_at.isoformat()
+                    if self._history_updated_at
+                    else None
+                ),
+                "requested_days": len(day_values),
+                "successful_days": 0,
+                "failed_days": len(day_values),
+            }
+
+        history: dict[str, list[dict[str, Any]]] = {}
+        for meter_key, by_day in meter_daily.items():
+            history[meter_key] = [by_day[day] for day in sorted(by_day.keys())]
+        for meter_key in current_meter_keys:
+            history.setdefault(meter_key, [])
+
+        self._history_cache = history
+        self._history_updated_at = now_utc
+
+        return history, {
+            "days_back": HISTORY_DAYS_BACK,
+            "cached": False,
+            "updated_at": now_utc.isoformat(),
+            "requested_days": len(day_values),
+            "successful_days": successful_days,
+            "failed_days": failed_days,
+        }
+
     async def _api_get_json(
         self,
         path: str,
@@ -211,10 +333,7 @@ class BrunataOnlineClient:
                 if err.status == 401:
                     await self._ensure_access_token(force=True)
                     continue
-                if (
-                    err.status in RETRYABLE_STATUS_CODES
-                    and attempt < max_attempts
-                ):
+                if err.status in RETRYABLE_STATUS_CODES and attempt < max_attempts:
                     last_error = err
                     await asyncio.sleep(attempt)
                     continue
@@ -290,7 +409,9 @@ class BrunataOnlineClient:
             access_token=str(access_token),
             access_expires_at=now + expires_in,
             refresh_token=(
-                str(tokens.get("refresh_token")) if tokens.get("refresh_token") else None
+                str(tokens.get("refresh_token"))
+                if tokens.get("refresh_token")
+                else None
             ),
             refresh_expires_at=(
                 now + refresh_expires_in if refresh_expires_in > 0 else 0.0
@@ -388,7 +509,9 @@ class BrunataOnlineClient:
 
                     redirect_location = _extract_location_url(confirmed)
                     parsed = urllib.parse.urlparse(redirect_location)
-                    code = (urllib.parse.parse_qs(parsed.query).get("code") or [None])[0]
+                    code = (urllib.parse.parse_qs(parsed.query).get("code") or [None])[
+                        0
+                    ]
                     if not code:
                         raise BrunataAuthError("Authorization code missing in redirect")
 
@@ -474,6 +597,34 @@ class BrunataOnlineClient:
         return count
 
     @staticmethod
+    def _meter_history_key(row: dict[str, Any]) -> str:
+        meter = row.get("meter") if isinstance(row, dict) else None
+        if not isinstance(meter, dict):
+            return ""
+        return "|".join(
+            [
+                str(meter.get("meterId") or ""),
+                str(meter.get("meterSequenceNo") or ""),
+                str(meter.get("meterNo") or ""),
+                str(meter.get("allocationUnit") or ""),
+            ]
+        )
+
+    def _history_startdate_suffix(self) -> str:
+        startdate = self._best_startdate
+        if not startdate:
+            return ""
+
+        match = re.match(r"^\d{4}-\d{2}-\d{2}(.*)$", startdate)
+        if not match:
+            return ""
+
+        suffix = match.group(1)
+        if suffix in {"", "T00:00:00Z"}:
+            return ""
+        return suffix
+
+    @staticmethod
     def _meter_sequence(row: dict[str, Any]) -> int:
         meter = row.get("meter") if isinstance(row, dict) else None
         if not isinstance(meter, dict):
@@ -490,6 +641,29 @@ def _to_int(value: Any, default: int) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def _to_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        text = value.strip().replace(" ", "")
+        if not text:
+            return None
+        if "," in text and "." in text:
+            if text.rfind(",") > text.rfind("."):
+                text = text.replace(".", "").replace(",", ".")
+            else:
+                text = text.replace(",", "")
+        elif "," in text:
+            text = text.replace(",", ".")
+        try:
+            return float(text)
+        except ValueError:
+            return None
+    return None
 
 
 def _extract_transaction_id(page_url: str, page_html: str) -> str:
