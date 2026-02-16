@@ -15,10 +15,20 @@ from . import BrunataDataCoordinator
 from .const import DOMAIN
 
 
-def _meter_medium_label(meter_type: str | None, allocation_unit: str | None) -> str:
+def _meter_medium_label(meter_type: Any, allocation_unit: Any) -> str:
     """Map Brunata meter type text to a stable medium label."""
-    meter_type_text = (meter_type or "").strip().lower()
-    allocation_unit_text = (allocation_unit or "").strip().lower()
+    meter_type_text = str(meter_type).strip().lower() if meter_type is not None else ""
+    allocation_unit_text = (
+        str(allocation_unit).strip().lower() if allocation_unit is not None else ""
+    )
+
+    # Allocation units are the most stable discriminator in Brunata payloads.
+    if allocation_unit_text == "k":
+        return "cold_water"
+    if allocation_unit_text == "w":
+        return "hot_water"
+    if allocation_unit_text == "o":
+        return "heating"
 
     if "cold water" in meter_type_text or "koldt vand" in meter_type_text:
         return "cold_water"
@@ -26,10 +36,12 @@ def _meter_medium_label(meter_type: str | None, allocation_unit: str | None) -> 
         return "hot_water"
     if "heating" in meter_type_text or "opvarmning" in meter_type_text:
         return "heating"
+    if meter_type_text == "1":
+        return "heating"
+    if meter_type_text == "2":
+        return "water"
 
     if "water" in meter_type_text or "vand" in meter_type_text:
-        return "water"
-    if allocation_unit_text == "w":
         return "water"
     return "unknown"
 
