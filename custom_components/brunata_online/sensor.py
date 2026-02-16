@@ -60,6 +60,27 @@ def _is_water_medium(medium: str) -> bool:
     return medium in {"cold_water", "hot_water", "water"}
 
 
+def _is_heating_medium(medium: str) -> bool:
+    return medium == "heating"
+
+
+def _unit_from_code(unit_code: Any) -> str | None:
+    code = str(unit_code).strip() if unit_code is not None else ""
+    if code == "8":
+        return "m³"
+    if code in {"1", "2", "3"}:
+        return "units"
+    if code in {"4", "9"}:
+        return "kWh"
+    return None
+
+
+def _heating_format(medium: str, native_unit: str | None) -> str | None:
+    if medium != "heating":
+        return None
+    return "energy_kwh" if native_unit == "kWh" else "index_units"
+
+
 def _normalize_reading_value(value: Any) -> float | int | None:
     """Normalize Brunata reading values to numeric values for statistics."""
     if value is None:
@@ -155,11 +176,18 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
             meter.get("meterType"),
             meter.get("allocationUnit"),
         )
+        self._unit_code = meter.get("unit")
+        self._native_unit = _unit_from_code(self._unit_code)
 
         self._attr_unique_id = (
             f"{DOMAIN}_{meter_key[0]}_{meter_key[1]}_{meter_key[2]}_{meter_key[3]}"
         )
-        self._attr_name = _meter_sensor_name(self._meter_medium)
+        if _is_heating_medium(self._meter_medium):
+            self._attr_name = (
+                "Heating energy" if self._native_unit == "kWh" else "Heating index"
+            )
+        else:
+            self._attr_name = _meter_sensor_name(self._meter_medium)
 
     @property
     def _current_row(self) -> dict[str, Any] | None:
@@ -183,30 +211,21 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
 
     @property
     def native_unit_of_measurement(self) -> str | None:
-        row = self._current_row
-        if not row:
-            return None
-
-        meter = row.get("meter") if isinstance(row.get("meter"), dict) else {}
-        unit_code = str(meter.get("unit") or "")
-
-        if unit_code == "8":
-            return "m³"
-        if unit_code in {"1", "2", "3"}:
-            return "units"
-        if unit_code in {"4", "9"}:
-            return "kWh"
-        return None
+        return self._native_unit
 
     @property
     def device_class(self) -> SensorDeviceClass | None:
         if _is_water_medium(self._meter_medium):
             return SensorDeviceClass.WATER
+        if _is_heating_medium(self._meter_medium) and self._native_unit == "kWh":
+            return SensorDeviceClass.ENERGY
         return None
 
     @property
     def state_class(self) -> SensorStateClass | None:
         if _is_water_medium(self._meter_medium):
+            return SensorStateClass.TOTAL_INCREASING
+        if _is_heating_medium(self._meter_medium):
             return SensorStateClass.TOTAL_INCREASING
         return None
 
@@ -230,6 +249,7 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
                 str(meter.get("meterType") or ""),
                 str(meter.get("allocationUnit") or ""),
             ),
+            "heating_format": _heating_format(self._meter_medium, self._native_unit),
             "allocation_unit": meter.get("allocationUnit"),
             "unit_code": meter.get("unit"),
             "mounting_date": meter.get("mountingDate"),
