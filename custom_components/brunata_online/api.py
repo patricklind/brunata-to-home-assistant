@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
-import os
 import re
 import secrets
 import time
@@ -43,10 +42,16 @@ REQUEST_TIMEOUT = ClientTimeout(total=45, connect=15, sock_connect=15, sock_read
 METER_REQUEST_TIMEOUT = ClientTimeout(total=10, connect=5, sock_connect=5, sock_read=8)
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 MAX_API_ATTEMPTS = 3
+AUTH_REQUEST_TIMEOUT: tuple[int, int] = (15, 60)
+AUTH_MAX_ATTEMPTS = 3
 
 
 class BrunataAuthError(Exception):
     """Raised when authentication against Brunata Online fails."""
+
+
+class BrunataConnectionError(Exception):
+    """Raised when connection to Brunata Online cannot be established."""
 
 
 @dataclass
@@ -293,128 +298,147 @@ class BrunataOnlineClient:
         )
 
     def _auth_sync(self) -> dict[str, Any]:
-        code_verifier = secrets.token_hex(28)
+        last_error: requests.RequestException | None = None
 
-        with requests.Session() as session:
-            session.headers.update(DEFAULT_HEADERS)
-
-            authorize_params = {
-                "client_id": CLIENT_ID,
-                "redirect_uri": REDIRECT_URI,
-                "scope": f"{CLIENT_ID} offline_access",
-                "response_type": "code",
-                "code_challenge": code_verifier,
-                "code_challenge_method": "plain",
-            }
-
-            req_code = session.get(
-                f"{AUTH_BASE_URL}/authorize",
-                params=authorize_params,
-                timeout=30,
-            )
-            req_code.raise_for_status()
-
-            tx = _extract_transaction_id(str(req_code.url), req_code.text)
-            csrf = _extract_csrf_token(req_code)
-
-            self_asserted = session.post(
-                f"{AUTHN_URL}/SelfAsserted",
-                params={"tx": tx, "p": OAUTH2_PROFILE},
-                data={
-                    "request_type": "RESPONSE",
-                    "logonIdentifier": self._username,
-                    "password": self._password,
-                },
-                headers={
-                    "Referer": str(req_code.url),
-                    "X-Csrf-Token": csrf,
-                    "X-Requested-With": "XMLHttpRequest",
-                    "Origin": (
-                        f"{urllib.parse.urlparse(str(req_code.url)).scheme}://"
-                        f"{urllib.parse.urlparse(str(req_code.url)).netloc}"
-                    ),
-                },
-                allow_redirects=False,
-                timeout=30,
-            )
-            if self_asserted.status_code >= 400:
-                error_text = _extract_b2c_error_text(self_asserted.text)
-                raise BrunataAuthError(
-                    error_text
-                    or f"Credential submit failed ({self_asserted.status_code})"
-                )
-
+        for attempt in range(1, AUTH_MAX_ATTEMPTS + 1):
             try:
-                payload = self_asserted.json()
-            except ValueError:
-                payload = {}
-            if isinstance(payload, dict):
-                status = str(payload.get("status", ""))
-                if status and status not in {"200", "201"}:
-                    error_text = _extract_b2c_error_text(str(payload)) or str(
-                        payload.get("message") or ""
+                code_verifier = secrets.token_hex(28)
+
+                with requests.Session() as session:
+                    session.headers.update(DEFAULT_HEADERS)
+
+                    authorize_params = {
+                        "client_id": CLIENT_ID,
+                        "redirect_uri": REDIRECT_URI,
+                        "scope": f"{CLIENT_ID} offline_access",
+                        "response_type": "code",
+                        "code_challenge": code_verifier,
+                        "code_challenge_method": "plain",
+                    }
+
+                    req_code = session.get(
+                        f"{AUTH_BASE_URL}/authorize",
+                        params=authorize_params,
+                        timeout=AUTH_REQUEST_TIMEOUT,
                     )
-                    raise BrunataAuthError(
-                        error_text or f"Credential submit returned status {status}"
+                    req_code.raise_for_status()
+
+                    tx = _extract_transaction_id(str(req_code.url), req_code.text)
+                    csrf = _extract_csrf_token(req_code)
+
+                    self_asserted = session.post(
+                        f"{AUTHN_URL}/SelfAsserted",
+                        params={"tx": tx, "p": OAUTH2_PROFILE},
+                        data={
+                            "request_type": "RESPONSE",
+                            "logonIdentifier": self._username,
+                            "password": self._password,
+                        },
+                        headers={
+                            "Referer": str(req_code.url),
+                            "X-Csrf-Token": csrf,
+                            "X-Requested-With": "XMLHttpRequest",
+                            "Origin": (
+                                f"{urllib.parse.urlparse(str(req_code.url)).scheme}://"
+                                f"{urllib.parse.urlparse(str(req_code.url)).netloc}"
+                            ),
+                        },
+                        allow_redirects=False,
+                        timeout=AUTH_REQUEST_TIMEOUT,
+                    )
+                    if self_asserted.status_code >= 400:
+                        error_text = _extract_b2c_error_text(self_asserted.text)
+                        raise BrunataAuthError(
+                            error_text
+                            or f"Credential submit failed ({self_asserted.status_code})"
+                        )
+
+                    try:
+                        payload = self_asserted.json()
+                    except ValueError:
+                        payload = {}
+                    if isinstance(payload, dict):
+                        status = str(payload.get("status", ""))
+                        if status and status not in {"200", "201"}:
+                            error_text = _extract_b2c_error_text(str(payload)) or str(
+                                payload.get("message") or ""
+                            )
+                            raise BrunataAuthError(
+                                error_text
+                                or f"Credential submit returned status {status}"
+                            )
+
+                    confirmed = session.get(
+                        f"{AUTHN_URL}/api/CombinedSigninAndSignup/confirmed",
+                        params={
+                            "rememberMe": "false",
+                            "csrf_token": csrf,
+                            "tx": tx,
+                            "p": OAUTH2_PROFILE,
+                        },
+                        allow_redirects=False,
+                        timeout=AUTH_REQUEST_TIMEOUT,
+                    )
+                    if confirmed.status_code >= 400:
+                        error_text = _extract_b2c_error_text(confirmed.text)
+                        raise BrunataAuthError(
+                            error_text
+                            or f"Signin confirmation failed ({confirmed.status_code})"
+                        )
+
+                    redirect_location = _extract_location_url(confirmed)
+                    parsed = urllib.parse.urlparse(redirect_location)
+                    code = (urllib.parse.parse_qs(parsed.query).get("code") or [None])[0]
+                    if not code:
+                        raise BrunataAuthError("Authorization code missing in redirect")
+
+                    token_payloads = (
+                        {
+                            "client_id": CLIENT_ID,
+                            "code_verifier": code_verifier,
+                            "code": code,
+                        },
+                        {
+                            "grant_type": "authorization_code",
+                            "client_id": CLIENT_ID,
+                            "redirect_uri": REDIRECT_URI,
+                            "scope": f"{CLIENT_ID} offline_access",
+                            "code_verifier": code_verifier,
+                            "code": code,
+                        },
                     )
 
-            confirmed = session.get(
-                f"{AUTHN_URL}/api/CombinedSigninAndSignup/confirmed",
-                params={
-                    "rememberMe": "false",
-                    "csrf_token": csrf,
-                    "tx": tx,
-                    "p": OAUTH2_PROFILE,
-                },
-                allow_redirects=False,
-                timeout=30,
-            )
-            if confirmed.status_code >= 400:
-                error_text = _extract_b2c_error_text(confirmed.text)
-                raise BrunataAuthError(
-                    error_text
-                    or f"Signin confirmation failed ({confirmed.status_code})"
-                )
+                    token_error: str | None = None
+                    for payload in token_payloads:
+                        resp = session.post(
+                            f"{AUTH_BASE_URL}/oauth/token",
+                            data=payload,
+                            headers={
+                                "Accept": "application/json, text/plain, */*",
+                                "Content-Type": "application/x-www-form-urlencoded",
+                                "User-Agent": DEFAULT_HEADERS["User-Agent"],
+                            },
+                            timeout=AUTH_REQUEST_TIMEOUT,
+                        )
+                        if resp.status_code < 400:
+                            return resp.json()
+                        token_error = f"{resp.status_code}: {resp.text[:300]}"
 
-            redirect_location = _extract_location_url(confirmed)
-            parsed = urllib.parse.urlparse(redirect_location)
-            code = (urllib.parse.parse_qs(parsed.query).get("code") or [None])[0]
-            if not code:
-                raise BrunataAuthError("Authorization code missing in redirect")
+                    raise BrunataAuthError(f"Token exchange failed ({token_error})")
+            except BrunataAuthError:
+                raise
+            except requests.RequestException as err:
+                last_error = err
+                if attempt < AUTH_MAX_ATTEMPTS:
+                    time.sleep(attempt)
+                    continue
+                raise BrunataConnectionError(
+                    f"Brunata auth request failed ({type(err).__name__}): {err}"
+                ) from err
 
-            token_payloads = (
-                {
-                    "client_id": CLIENT_ID,
-                    "code_verifier": code_verifier,
-                    "code": code,
-                },
-                {
-                    "grant_type": "authorization_code",
-                    "client_id": CLIENT_ID,
-                    "redirect_uri": REDIRECT_URI,
-                    "scope": f"{CLIENT_ID} offline_access",
-                    "code_verifier": code_verifier,
-                    "code": code,
-                },
-            )
-
-            last_error: str | None = None
-            for payload in token_payloads:
-                resp = session.post(
-                    f"{AUTH_BASE_URL}/oauth/token",
-                    data=payload,
-                    headers={
-                        "Accept": "application/json, text/plain, */*",
-                        "Content-Type": "application/x-www-form-urlencoded",
-                        "User-Agent": DEFAULT_HEADERS["User-Agent"],
-                    },
-                    timeout=30,
-                )
-                if resp.status_code < 400:
-                    return resp.json()
-                last_error = f"{resp.status_code}: {resp.text[:300]}"
-
-            raise BrunataAuthError(f"Token exchange failed ({last_error})")
+        raise BrunataConnectionError(
+            f"Brunata auth flow failed after {AUTH_MAX_ATTEMPTS} attempts: {last_error}"
+        )
 
     @staticmethod
     def _build_date_candidates() -> list[str]:
@@ -540,4 +564,4 @@ def _extract_b2c_error_text(payload: str) -> str | None:
     return None
 
 
-__all__ = ["BrunataAuthError", "BrunataOnlineClient"]
+__all__ = ["BrunataAuthError", "BrunataConnectionError", "BrunataOnlineClient"]

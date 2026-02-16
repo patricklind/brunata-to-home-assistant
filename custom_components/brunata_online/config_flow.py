@@ -11,7 +11,7 @@ from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import voluptuous as vol
 
-from .api import BrunataAuthError, BrunataOnlineClient
+from .api import BrunataAuthError, BrunataConnectionError, BrunataOnlineClient
 from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -61,6 +61,9 @@ class BrunataOnlineConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         except BrunataAuthError as err:
             _LOGGER.warning("Brunata authentication failed: %s", err)
             return "auth"
+        except BrunataConnectionError as err:
+            _LOGGER.warning("Brunata connection failed: %s", err)
+            return "cannot_connect"
         except (TimeoutError, asyncio.TimeoutError, ClientError) as err:
             _LOGGER.warning("Brunata connection failed: %r", err)
             return "cannot_connect"
