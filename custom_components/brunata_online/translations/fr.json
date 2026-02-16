@@ -11,7 +11,9 @@
       }
     },
     "error": {
-      "auth": "Identifiant ou mot de passe erroné."
+      "auth": "Identifiant ou mot de passe erroné.",
+      "cannot_connect": "Impossible de se connecter à Brunata Online pour le moment.",
+      "unknown": "Erreur inattendue. Consultez les journaux Home Assistant."
     },
     "abort": {
       "single_instance_allowed": "Une seule instance est autorisée."

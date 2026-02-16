@@ -1,7 +1,9 @@
 """Adds config flow for Brunata Online."""
 
+import asyncio
 import logging
 
+from aiohttp import ClientError
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -32,15 +34,14 @@ class BrunataOnlineFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         #     return self.async_abort(reason="single_instance_allowed")
 
         if user_input is not None:
-            valid = await self._test_credentials(
+            result = await self._test_credentials(
                 user_input[CONF_USERNAME], user_input[CONF_PASSWORD]
             )
-            if valid:
+            if result == "ok":
                 return self.async_create_entry(
                     title=user_input[CONF_USERNAME], data=user_input
                 )
-            else:
-                self._errors["base"] = "auth"
+            self._errors["base"] = result
 
             return await self._show_config_form(user_input)
 
@@ -62,19 +63,23 @@ class BrunataOnlineFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def _test_credentials(self, username, password):
-        """Return true if credentials is valid."""
+        """Validate credentials and return flow error key."""
         try:
             session = async_get_clientsession(self.hass)
             client = BrunataOnlineApiClient(username, password, session)
             await client.async_get_data()
-            return True
+            return "ok"
         except BrunataOnlineAuthError as err:
             _LOGGER.warning("Brunata authentication failed: %s", err)
+            return "auth"
+        except (TimeoutError, asyncio.TimeoutError, ClientError) as err:
+            _LOGGER.warning("Brunata connection failed: %r", err)
+            return "cannot_connect"
         except Exception as err:  # pylint: disable=broad-except
             _LOGGER.exception(
                 "Unexpected error while validating Brunata credentials: %s", err
             )
-        return False
+            return "unknown"
 
 
 class BrunataOnlineOptionsFlowHandler(config_entries.OptionsFlow):

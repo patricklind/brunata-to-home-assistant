@@ -11,7 +11,9 @@
       }
     },
     "error": {
-      "auth": "Brugernavn/Adgangskode er forkert."
+      "auth": "Brugernavn/Adgangskode er forkert.",
+      "cannot_connect": "Kan ikke oprette forbindelse til Brunata Online lige nu.",
+      "unknown": "Uventet fejl. Tjek Home Assistant-loggen."
     },
     "abort": {
       "single_instance_allowed": "Denne integration kan kun konfigureres en gang."
