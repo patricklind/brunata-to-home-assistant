@@ -58,6 +58,25 @@ def _meter_sensor_name(medium: str) -> str:
     }.get(medium, "Reading")
 
 
+def _meter_device_name(medium: str, native_unit: str | None, placement: str) -> str:
+    """User-facing device name for meter hardware."""
+    if medium == "hot_water":
+        base = "Water meter (Hot water)"
+    elif medium == "cold_water":
+        base = "Water meter (Cold water)"
+    elif medium == "water":
+        base = "Water meter"
+    elif medium == "heating" and native_unit == "units":
+        base = "Radiator meter (Heating)"
+    elif medium == "heating":
+        base = "Heat meter (Heating energy)"
+    else:
+        base = "Meter"
+
+    place = placement.strip()
+    return f"{base} - {place}" if place else base
+
+
 def _is_water_medium(medium: str) -> bool:
     return medium in {"cold_water", "hot_water", "water"}
 
@@ -236,6 +255,11 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
         )
         self._unit_code = meter.get("unit")
         self._native_unit = _unit_from_code(self._unit_code)
+        self._device_name = _meter_device_name(
+            self._meter_medium,
+            self._native_unit,
+            self._placement,
+        )
 
         self._attr_unique_id = (
             f"{DOMAIN}_{meter_key[0]}_{meter_key[1]}_{meter_key[2]}_{meter_key[3]}"
@@ -331,10 +355,7 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
             identifiers={(DOMAIN, f"meter_{self._meter_identifier}")},
             manufacturer="Brunata",
             model=meter_type,
-            name=(
-                f"{self._placement} {self._meter_no} "
-                f"({_meter_sensor_name(self._meter_medium)})"
-            ).strip(),
+            name=self._device_name,
             serial_number=self._meter_serial,
         )
 
