@@ -103,6 +103,12 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
             meter.get("meterId") or meter_key[0] or meter_no or meter_key[1]
         )
         self._meter_no = str(meter_no or self._meter_identifier)
+        self._meter_serial = str(
+            meter.get("serialNumber")
+            or meter.get("serialNo")
+            or meter.get("meterNo")
+            or self._meter_identifier
+        )
         self._placement = str(meter.get("placement") or "Meter")
         self._meter_medium = _meter_medium_label(
             meter.get("meterType"),
@@ -163,6 +169,7 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
         return {
             "meter_id": meter.get("meterId"),
             "meter_no": meter.get("meterNo"),
+            "serial_number": self._meter_serial,
             "meter_sequence_no": meter.get("meterSequenceNo"),
             "placement": meter.get("placement"),
             "meter_type": meter.get("meterType"),
@@ -197,5 +204,5 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
                 f"{self._placement} {self._meter_no} "
                 f"({_meter_sensor_name(self._meter_medium)})"
             ).strip(),
-            serial_number=self._meter_no,
+            serial_number=self._meter_serial,
         )
