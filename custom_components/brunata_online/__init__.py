@@ -9,7 +9,8 @@ from datetime import timedelta
 import logging
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import Config, HomeAssistant
+from homeassistant.config import ConfigType
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -22,7 +23,7 @@ SCAN_INTERVAL = timedelta(minutes=15)
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 
-async def async_setup(hass: HomeAssistant, config: Config):
+async def async_setup(hass: HomeAssistant, config: ConfigType):
     """Set up this integration using YAML is not supported."""
     return True
 
@@ -78,10 +79,14 @@ class BrunataOnlineDataUpdateCoordinator(DataUpdateCoordinator):
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Handle removal of an entry."""
-    coordinator = hass.data[DOMAIN][entry.entry_id]
+    domain_data = hass.data.get(DOMAIN) or {}
+    coordinator = domain_data.get(entry.entry_id)
+    if coordinator is None:
+        return True
+
     unloaded = await hass.config_entries.async_unload_platforms(entry, coordinator.platforms)
     if unloaded:
-        hass.data[DOMAIN].pop(entry.entry_id)
+        domain_data.pop(entry.entry_id, None)
 
     return unloaded
 

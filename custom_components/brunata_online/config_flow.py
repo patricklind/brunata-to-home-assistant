@@ -2,7 +2,7 @@
 
 from homeassistant import config_entries
 from homeassistant.core import callback
-from homeassistant.helpers.aiohttp_client import async_create_clientsession
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import voluptuous as vol
 
 from .api import BrunataOnlineApiClient
@@ -60,7 +60,7 @@ class BrunataOnlineFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     async def _test_credentials(self, username, password):
         """Return true if credentials is valid."""
         try:
-            session = async_create_clientsession(self.hass)
+            session = async_get_clientsession(self.hass)
             client = BrunataOnlineApiClient(username, password, session)
             await client.async_get_data()
             return True

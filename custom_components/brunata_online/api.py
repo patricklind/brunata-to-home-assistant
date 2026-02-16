@@ -129,6 +129,8 @@ def _compute_expiry(
     except (TypeError, ValueError):
         seconds = 0
     if seconds <= 0:
+        if default_seconds <= 0:
+            return 0.0
         seconds = default_seconds
     return now + seconds
 
@@ -140,7 +142,7 @@ class BrunataOnlineApiClient:
         self._username = username
         self._password = password
         self._session = session
-        self._session.headers.update(DEFAULT_HEADERS)
+        self._default_headers = dict(DEFAULT_HEADERS)
 
         self._token_state = _TokenState()
         self._token_lock = asyncio.Lock()
@@ -200,7 +202,10 @@ class BrunataOnlineApiClient:
         await self._ensure_access_token()
 
         url = f"{API_BASE_URL}{path}"
-        headers = {"Authorization": f"{self._token_state.token_type} {self._token_state.access_token}"}
+        headers = {
+            **self._default_headers,
+            "Authorization": f"{self._token_state.token_type} {self._token_state.access_token}",
+        }
 
         try:
             async with self._session.get(
@@ -212,7 +217,12 @@ class BrunataOnlineApiClient:
             if e.status == 401:
                 # Token likely expired/revoked; force refresh and retry once.
                 await self._ensure_access_token(force=True)
-                headers = {"Authorization": f"{self._token_state.token_type} {self._token_state.access_token}"}
+                headers = {
+                    **self._default_headers,
+                    "Authorization": (
+                        f"{self._token_state.token_type} {self._token_state.access_token}"
+                    ),
+                }
                 async with self._session.get(
                     url, params=params, headers=headers, timeout=REQUEST_TIMEOUT
                 ) as resp:

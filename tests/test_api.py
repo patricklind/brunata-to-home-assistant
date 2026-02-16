@@ -2,31 +2,23 @@
 
 from unittest.mock import AsyncMock, patch
 
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from custom_components.brunata_online.api import (
+    BrunataOnlineApiClient,
+    _TokenState,
+    _compute_expiry,
+)
 
-from custom_components.brunata_online.api import BrunataOnlineApiClient
 
-
-async def test_api_get_data(hass, aioclient_mock):
+async def test_api_get_data():
     """Test async_get_data returns building and measuring point data."""
-    api = BrunataOnlineApiClient("test", "test", async_get_clientsession(hass))
+    api = BrunataOnlineApiClient("test", "test", AsyncMock())
 
-    # Mock the token acquisition so we skip real B2C auth
-    with patch.object(api, "_ensure_access_token", new_callable=AsyncMock):
-        # Set a fake token so _api_get_json builds the auth header
-        api._token_state.access_token = "fake-token"
-        api._token_state.access_expires_at = 9999999999.0
-
-        # Mock buildings endpoint
-        aioclient_mock.get(
-            "https://online.brunata.com/online-webservice/v1/rest/buildings",
-            json=[{"buildingNo": 123, "buildingName": "Test Building"}],
-        )
-
-        # Mock measuring points endpoint (match any query string)
-        aioclient_mock.get(
-            "https://online.brunata.com/online-webservice/v1/rest/buildings/123/measuringpoints",
-            json={
+    async def _fake_api_get_json(path, params=None):
+        if path == "/buildings":
+            return [{"buildingNo": 123, "buildingName": "Test Building"}]
+        if path == "/buildings/123/measuringpoints":
+            assert params and "date" in params
+            return {
                 "measuringPoints": [
                     {
                         "serialNo": "ABC123",
@@ -35,9 +27,10 @@ async def test_api_get_data(hass, aioclient_mock):
                         "connectedTo": "Stue",
                     }
                 ]
-            },
-        )
+            }
+        raise AssertionError(f"Unexpected path: {path}")
 
+    with patch.object(api, "_api_get_json", side_effect=_fake_api_get_json):
         data = await api.async_get_data()
 
     assert "buildings" in data
@@ -48,3 +41,35 @@ async def test_api_get_data(hass, aioclient_mock):
     point = list(data["measuring_points"].values())[0]
     assert point["serialNo"] == "ABC123"
     assert point["meterValue"] == 588
+
+
+def test_refresh_token_without_expiry_is_still_usable():
+    """Treat missing refresh-token expiry as unknown (still usable)."""
+    state = _TokenState(refresh_token="refresh-token", refresh_expires_at=0)
+    assert state.refresh_valid(now=1700000000)
+
+
+def test_compute_expiry_uses_default_for_access_tokens():
+    """Fallback to default seconds when access expiry fields are missing."""
+    now = 1000.0
+    expiry = _compute_expiry(
+        now=now,
+        tokens={},
+        on_key="expires_on",
+        in_key="expires_in",
+        default_seconds=300,
+    )
+    assert expiry == 1300.0
+
+
+def test_compute_expiry_returns_unknown_when_no_refresh_expiry():
+    """Keep refresh expiry unknown if the token response omits expiry fields."""
+    now = 1000.0
+    expiry = _compute_expiry(
+        now=now,
+        tokens={},
+        on_key="refresh_token_expires_on",
+        in_key="refresh_token_expires_in",
+        default_seconds=0,
+    )
+    assert expiry == 0.0

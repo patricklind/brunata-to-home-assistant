@@ -28,7 +28,7 @@ def bypass_setup_fixture():
         yield
 
 
-async def test_successful_config_flow(hass, bypass_get_data):
+async def test_successful_config_flow(hass, bypass_get_data, enable_custom_integrations):
     """Test a successful config flow."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
@@ -47,7 +47,7 @@ async def test_successful_config_flow(hass, bypass_get_data):
     assert result["result"]
 
 
-async def test_failed_config_flow(hass, error_on_get_data):
+async def test_failed_config_flow(hass, error_on_get_data, enable_custom_integrations):
     """Test a failed config flow due to credential validation failure."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
@@ -64,7 +64,7 @@ async def test_failed_config_flow(hass, error_on_get_data):
     assert result["errors"] == {"base": "auth"}
 
 
-async def test_options_flow(hass):
+async def test_options_flow(hass, enable_custom_integrations):
     """Test an options flow."""
     entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
     entry.add_to_hass(hass)

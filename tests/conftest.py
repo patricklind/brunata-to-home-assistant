@@ -1,6 +1,6 @@
 """Global fixtures for Brunata Online integration."""
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -15,6 +15,20 @@ def skip_notifications_fixture():
     """Skip notification calls."""
     with patch("homeassistant.components.persistent_notification.async_create"), patch(
         "homeassistant.components.persistent_notification.async_dismiss"
+    ):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def mock_clientsession_fixture():
+    """Avoid creating real HA shared client sessions in unit tests."""
+    mock_session = AsyncMock()
+    with patch(
+        "custom_components.brunata_online.async_get_clientsession",
+        return_value=mock_session,
+    ), patch(
+        "custom_components.brunata_online.config_flow.async_get_clientsession",
+        return_value=mock_session,
     ):
         yield
 
