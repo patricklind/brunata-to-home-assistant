@@ -20,10 +20,13 @@ _LOGGER: logging.Logger = logging.getLogger(__package__)
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Brunata Online sensors based on coordinator data."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    points: dict[str, dict[str, Any]] = (coordinator.data or {}).get("measuring_points") or {}
+    points: dict[str, dict[str, Any]] = (coordinator.data or {}).get(
+        "measuring_points"
+    ) or {}
 
     entities: list[BrunataMeasuringPointSensor] = [
-        BrunataMeasuringPointSensor(coordinator, entry, point_id) for point_id in sorted(points)
+        BrunataMeasuringPointSensor(coordinator, entry, point_id)
+        for point_id in sorted(points)
     ]
     async_add_entities(entities)
 
@@ -105,7 +108,9 @@ class BrunataMeasuringPointSensor(BrunataOnlineEntity, SensorEntity):
     def device_info(self) -> dict[str, Any]:
         p = self._point() or {}
         building_no = p.get("_buildingNo")
-        buildings: dict[str, dict[str, Any]] = (self.coordinator.data or {}).get("buildings") or {}
+        buildings: dict[str, dict[str, Any]] = (self.coordinator.data or {}).get(
+            "buildings"
+        ) or {}
         building = buildings.get(str(building_no)) if building_no is not None else None
 
         # One device per building (if known), else fall back to config entry.
@@ -142,4 +147,3 @@ class BrunataMeasuringPointSensor(BrunataOnlineEntity, SensorEntity):
             }
         )
         return attrs
-

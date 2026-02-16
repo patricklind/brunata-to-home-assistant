@@ -34,9 +34,7 @@ API_BASE_URL = f"{BASE_URL}/online-webservice/v1/rest"
 AUTH_BASE_URL = f"{BASE_URL}/online-auth-webservice/v1/rest"
 
 OAUTH2_PROFILE = "B2C_1_signin_username"
-AUTHN_URL = (
-    f"https://brunatab2cprod.b2clogin.com/brunatab2cprod.onmicrosoft.com/{OAUTH2_PROFILE}"
-)
+AUTHN_URL = f"https://brunatab2cprod.b2clogin.com/brunatab2cprod.onmicrosoft.com/{OAUTH2_PROFILE}"
 OAUTH2_URL = f"{AUTHN_URL}/oauth2/v2.0"
 
 # Two known Brunata Online OAuth client configs exist in production.
@@ -151,7 +149,9 @@ class BrunataOnlineApiClient:
         """Fetch data that will back Home Assistant entities."""
         # Get meter values (measuring points) for "today" in UTC.
         # The API expects an ISO string; the portal uses Luxon DateTime.toISO().
-        date_dt = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        date_dt = datetime.now(timezone.utc).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
         date_param = date_dt.isoformat().replace("+00:00", "Z")
 
         buildings: list[dict[str, Any]] = await self._api_get_json("/buildings")
@@ -171,7 +171,11 @@ class BrunataOnlineApiClient:
                     params={"date": date_param},
                 )
             except Exception as err:  # pylint: disable=broad-except
-                _LOGGER.debug("Failed fetching measuring points for building %s: %s", building_no, err)
+                _LOGGER.debug(
+                    "Failed fetching measuring points for building %s: %s",
+                    building_no,
+                    err,
+                )
                 continue
 
             # API shape in the webapp is { measuringPoints: [...] }.
@@ -183,8 +187,14 @@ class BrunataOnlineApiClient:
             for p in points_list:
                 if not isinstance(p, dict):
                     continue
-                serial = p.get("serialNo") or p.get("printedSerialNo") or p.get("meterSequenceNo")
-                point_key = str(serial) if serial is not None else str(len(points_by_id))
+                serial = (
+                    p.get("serialNo")
+                    or p.get("printedSerialNo")
+                    or p.get("meterSequenceNo")
+                )
+                point_key = (
+                    str(serial) if serial is not None else str(len(points_by_id))
+                )
                 point_id = f"{building_no}:{point_key}"
                 p["_buildingNo"] = building_no
                 p["_id"] = point_id
@@ -197,7 +207,9 @@ class BrunataOnlineApiClient:
             "date": date_param,
         }
 
-    async def _api_get_json(self, path: str, params: dict[str, str] | None = None) -> Any:
+    async def _api_get_json(
+        self, path: str, params: dict[str, str] | None = None
+    ) -> Any:
         """GET JSON from Brunata Online API, retrying once on 401."""
         await self._ensure_access_token()
 
@@ -244,10 +256,16 @@ class BrunataOnlineApiClient:
                         client_id=self._token_state.client_id,
                         refresh_token=self._token_state.refresh_token or "",
                     )
-                    self._update_token_state(tokens, client_id=self._token_state.client_id, redirect_uri=self._token_state.redirect_uri)
+                    self._update_token_state(
+                        tokens,
+                        client_id=self._token_state.client_id,
+                        redirect_uri=self._token_state.redirect_uri,
+                    )
                     return
                 except Exception as err:  # pylint: disable=broad-except
-                    _LOGGER.debug("Refresh token failed; falling back to full login: %s", err)
+                    _LOGGER.debug(
+                        "Refresh token failed; falling back to full login: %s", err
+                    )
                     self._token_state = _TokenState()
 
             # Full login (try primary, then secondary config).
@@ -272,9 +290,13 @@ class BrunataOnlineApiClient:
                         last_err = err
                         continue
 
-            raise BrunataOnlineAuthError("Failed to authenticate against Brunata Online") from last_err
+            raise BrunataOnlineAuthError(
+                "Failed to authenticate against Brunata Online"
+            ) from last_err
 
-    async def _refresh_tokens(self, client_id: str, refresh_token: str) -> dict[str, Any]:
+    async def _refresh_tokens(
+        self, client_id: str, refresh_token: str
+    ) -> dict[str, Any]:
         data = {
             "grant_type": "refresh_token",
             "client_id": client_id,
@@ -282,18 +304,27 @@ class BrunataOnlineApiClient:
             "refresh_token": refresh_token,
         }
         async with self._session.post(
-            f"{OAUTH2_URL}/token", data=data, headers=DEFAULT_HEADERS, timeout=REQUEST_TIMEOUT
+            f"{OAUTH2_URL}/token",
+            data=data,
+            headers=DEFAULT_HEADERS,
+            timeout=REQUEST_TIMEOUT,
         ) as resp:
             # Keep the error body, but don't log tokens.
             _ = await resp.text()
             if resp.status >= 400:
-                raise BrunataOnlineAuthError(f"Refresh token request failed ({resp.status})")
+                raise BrunataOnlineAuthError(
+                    f"Refresh token request failed ({resp.status})"
+                )
             try:
                 return await resp.json()
             except Exception as err:  # pylint: disable=broad-except
-                raise BrunataOnlineAuthError("Failed to parse refresh token response") from err
+                raise BrunataOnlineAuthError(
+                    "Failed to parse refresh token response"
+                ) from err
 
-    def _update_token_state(self, tokens: dict[str, Any], client_id: str, redirect_uri: str | None) -> None:
+    def _update_token_state(
+        self, tokens: dict[str, Any], client_id: str, redirect_uri: str | None
+    ) -> None:
         now = time.time()
         access = tokens.get("access_token")
         if not access:
@@ -315,7 +346,11 @@ class BrunataOnlineApiClient:
             access_token=str(access),
             token_type=str(token_type),
             access_expires_at=float(access_expires_at),
-            refresh_token=str(tokens.get("refresh_token")) if tokens.get("refresh_token") else None,
+            refresh_token=(
+                str(tokens.get("refresh_token"))
+                if tokens.get("refresh_token")
+                else None
+            ),
             refresh_expires_at=float(refresh_expires_at),
             client_id=client_id,
             redirect_uri=redirect_uri,
@@ -357,7 +392,9 @@ class BrunataOnlineApiClient:
             # 2) Extract transaction ID from the login HTML.
             settings_match = re.search(r"var SETTINGS = (\{[^;]*\});", req_code.text)
             if not settings_match:
-                raise BrunataOnlineAuthError("Failed to locate B2C SETTINGS in login page")
+                raise BrunataOnlineAuthError(
+                    "Failed to locate B2C SETTINGS in login page"
+                )
 
             settings_txt = settings_match.group(1)
             trans_match = re.search(r'"transId"\s*:\s*"([^"]+)"', settings_txt)
@@ -365,7 +402,9 @@ class BrunataOnlineApiClient:
                 # Fallback for slightly different formatting
                 trans_match = re.search(r'transId"\s*:\s*"([^"]+)"', settings_txt)
             if not trans_match:
-                raise BrunataOnlineAuthError("Failed to extract transaction id from login page")
+                raise BrunataOnlineAuthError(
+                    "Failed to extract transaction id from login page"
+                )
             transaction_id = trans_match.group(1)
 
             # 3) Post credentials.
@@ -400,9 +439,13 @@ class BrunataOnlineApiClient:
             )
             location = req_auth.headers.get("Location")
             if not location:
-                raise BrunataOnlineAuthError("Missing redirect Location while retrieving auth code")
+                raise BrunataOnlineAuthError(
+                    "Missing redirect Location while retrieving auth code"
+                )
             if not location.startswith(redirect_uri):
-                raise BrunataOnlineAuthError("Unexpected redirect target while retrieving auth code")
+                raise BrunataOnlineAuthError(
+                    "Unexpected redirect target while retrieving auth code"
+                )
 
             parsed = urllib.parse.urlparse(location)
             qs = urllib.parse.parse_qs(parsed.query)

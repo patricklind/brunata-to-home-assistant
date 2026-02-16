@@ -28,7 +28,9 @@ def bypass_setup_fixture():
         yield
 
 
-async def test_successful_config_flow(hass, bypass_get_data, enable_custom_integrations):
+async def test_successful_config_flow(
+    hass, bypass_get_data, enable_custom_integrations
+):
     """Test a successful config flow."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
