@@ -1,1 +1,1 @@
-"""Dummy init so that pytest works."""
+"""Namespace package for custom components."""

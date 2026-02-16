@@ -3,31 +3,20 @@
     "step": {
       "user": {
         "title": "Brunata Online",
-        "description": "If you need help with the configuration have a look here: https://github.com/patricklind/brunata-to-home-assistant",
+        "description": "Log in with your Brunata Online account.",
         "data": {
-          "username": "Username",
+          "username": "Username or email",
           "password": "Password"
         }
       }
     },
     "error": {
-      "auth": "Username/Password is wrong.",
-      "cannot_connect": "Cannot connect to Brunata Online right now.",
-      "unknown": "Unexpected error. Check Home Assistant logs."
+      "auth": "Username/password is incorrect.",
+      "cannot_connect": "Cannot connect to Brunata Online.",
+      "unknown": "Unexpected error. Check logs."
     },
     "abort": {
-      "single_instance_allowed": "Only a single instance is allowed."
-    }
-  },
-  "options": {
-    "step": {
-      "user": {
-        "data": {
-          "binary_sensor": "Binary sensor enabled",
-          "sensor": "Sensor enabled",
-          "switch": "Switch enabled"
-        }
-      }
+      "already_configured": "This account is already configured."
     }
   }
 }

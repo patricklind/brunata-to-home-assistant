@@ -1,149 +1,154 @@
-"""Sensor platform for Brunata Online.
-
-This integration currently exposes meter "measuring points" as sensors.
-Each sensor represents the latest known meter reading (cumulative value).
-"""
+"""Sensor entities for Brunata Online."""
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
-from homeassistant.components.sensor import SensorEntity, SensorStateClass
+from homeassistant.components.sensor import SensorEntity
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, ICON
-from .entity import BrunataOnlineEntity
-
-_LOGGER: logging.Logger = logging.getLogger(__package__)
-
-
-async def async_setup_entry(hass, entry, async_add_entities):
-    """Set up Brunata Online sensors based on coordinator data."""
-    coordinator = hass.data[DOMAIN][entry.entry_id]
-    points: dict[str, dict[str, Any]] = (coordinator.data or {}).get(
-        "measuring_points"
-    ) or {}
-
-    entities: list[BrunataMeasuringPointSensor] = [
-        BrunataMeasuringPointSensor(coordinator, entry, point_id)
-        for point_id in sorted(points)
-    ]
-    async_add_entities(entities)
+from . import BrunataDataCoordinator
+from .const import DOMAIN
 
 
-def _coerce_float(value: Any) -> float | None:
-    if value is None:
+def _row_key(row: dict[str, Any]) -> tuple[str, str, str, str]:
+    meter = row.get("meter") if isinstance(row.get("meter"), dict) else {}
+    return (
+        str(meter.get("meterId") or ""),
+        str(meter.get("meterSequenceNo") or ""),
+        str(meter.get("meterNo") or ""),
+        str(meter.get("allocationUnit") or ""),
+    )
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up Brunata sensors from config entry."""
+    coordinator: BrunataDataCoordinator = hass.data[DOMAIN][entry.entry_id]
+
+    known_keys: set[tuple[str, str, str, str]] = set()
+
+    def _add_new_entities() -> None:
+        meters = (coordinator.data or {}).get("meters") or []
+        new_entities: list[BrunataMeterSensor] = []
+        for row in meters:
+            if not isinstance(row, dict):
+                continue
+            key = _row_key(row)
+            if key in known_keys:
+                continue
+            known_keys.add(key)
+            new_entities.append(BrunataMeterSensor(coordinator, key))
+
+        if new_entities:
+            async_add_entities(new_entities)
+
+    _add_new_entities()
+    entry.async_on_unload(coordinator.async_add_listener(_add_new_entities))
+
+
+class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity):
+    """Representation of a Brunata meter reading."""
+
+    _attr_has_entity_name = True
+
+    def __init__(
+        self,
+        coordinator: BrunataDataCoordinator,
+        meter_key: tuple[str, str, str, str],
+    ) -> None:
+        super().__init__(coordinator)
+        self._meter_key = meter_key
+
+        row = self._current_row
+        meter = row.get("meter", {}) if row else {}
+        meter_no = meter.get("meterNo") or meter_key[2]
+        placement = meter.get("placement") or "Meter"
+
+        self._attr_unique_id = (
+            f"{DOMAIN}_{meter_key[0]}_{meter_key[1]}_{meter_key[2]}_{meter_key[3]}"
+        )
+        self._attr_name = f"{placement} {meter_no}".strip()
+
+    @property
+    def _current_row(self) -> dict[str, Any] | None:
+        meters = (self.coordinator.data or {}).get("meters") or []
+        for row in meters:
+            if isinstance(row, dict) and _row_key(row) == self._meter_key:
+                return row
         return None
-    if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(value, str):
-        # The portal UI is locale-dependent; be permissive.
-        v = value.strip().replace(" ", "")
-        v = v.replace(",", ".")
-        try:
-            return float(v)
-        except ValueError:
+
+    @property
+    def available(self) -> bool:
+        return super().available and self._current_row is not None
+
+    @property
+    def native_value(self):
+        row = self._current_row
+        if not row:
             return None
-    return None
-
-
-def _guess_unit(allo_unit_type: str | None) -> str | None:
-    if not allo_unit_type:
-        return None
-    t = allo_unit_type.lower()
-    if "water" in t:
-        return "m³"
-    if "heating" in t:
-        # Many Brunata heating meters are cost allocator "units".
-        return "units"
-    if "electric" in t or "energy" in t or "power" in t:
-        return "kWh"
-    return None
-
-
-class BrunataMeasuringPointSensor(BrunataOnlineEntity, SensorEntity):
-    """Sensor for a single measuring point (meter reading)."""
-
-    _attr_state_class = SensorStateClass.TOTAL_INCREASING
-    _attr_icon = ICON
-
-    def __init__(self, coordinator, config_entry, point_id: str) -> None:
-        super().__init__(coordinator, config_entry)
-        self._point_id = point_id
-
-    def _point(self) -> dict[str, Any] | None:
-        data = self.coordinator.data or {}
-        points: dict[str, dict[str, Any]] = data.get("measuring_points") or {}
-        return points.get(self._point_id)
-
-    @property
-    def unique_id(self) -> str:
-        return self._point_id
-
-    @property
-    def name(self) -> str:
-        p = self._point() or {}
-        use = p.get("alloUnitType") or "Meter"
-        loc = p.get("connectedTo") or p.get("roomId") or p.get("locationNo") or ""
-        serial = p.get("serialNo") or ""
-        if loc and serial:
-            return f"Brunata {use} {loc} ({serial})"
-        if serial:
-            return f"Brunata {use} ({serial})"
-        return f"Brunata {use} {self._point_id}"
-
-    @property
-    def native_value(self) -> float | None:
-        p = self._point()
-        if not p:
-            return None
-        return _coerce_float(p.get("meterValue"))
+        reading = row.get("reading") if isinstance(row.get("reading"), dict) else {}
+        return reading.get("value")
 
     @property
     def native_unit_of_measurement(self) -> str | None:
-        p = self._point() or {}
-        return _guess_unit(p.get("alloUnitType"))
+        row = self._current_row
+        if not row:
+            return None
 
-    @property
-    def device_info(self) -> dict[str, Any]:
-        p = self._point() or {}
-        building_no = p.get("_buildingNo")
-        buildings: dict[str, dict[str, Any]] = (self.coordinator.data or {}).get(
-            "buildings"
-        ) or {}
-        building = buildings.get(str(building_no)) if building_no is not None else None
+        meter = row.get("meter") if isinstance(row.get("meter"), dict) else {}
+        unit_code = str(meter.get("unit") or "")
 
-        # One device per building (if known), else fall back to config entry.
-        if building_no is not None:
-            name = building.get("buildingName") if isinstance(building, dict) else None
-            return {
-                "identifiers": {(DOMAIN, str(building_no))},
-                "name": name or f"Brunata Building {building_no}",
-                "manufacturer": "Brunata",
-                "model": "Brunata Online",
-            }
-
-        return super().device_info
+        if unit_code == "8":
+            return "m³"
+        if unit_code in {"1", "2", "3"}:
+            return "units"
+        if unit_code in {"4", "9"}:
+            return "kWh"
+        return None
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        attrs = dict(super().extra_state_attributes or {})
-        p = self._point() or {}
-        attrs.update(
-            {
-                "building_no": p.get("_buildingNo"),
-                "serial_no": p.get("serialNo"),
-                "printed_serial_no": p.get("printedSerialNo"),
-                "connected_to": p.get("connectedTo"),
-                "allo_unit_type": p.get("alloUnitType"),
-                "reading_date": p.get("readingDate"),
-                "mounting_date": p.get("mountingDate"),
-                "dismounted_date": p.get("dismountedDate"),
-                "meter_sequence_no": p.get("meterSequenceNo"),
-                "property_no": p.get("propertyNo"),
-                "branch_no": p.get("branchNo"),
-                "location_no": p.get("locationNo"),
-                "raw_unit": p.get("unit"),
-            }
+        row = self._current_row
+        if not row:
+            return {}
+
+        meter = row.get("meter") if isinstance(row.get("meter"), dict) else {}
+        reading = row.get("reading") if isinstance(row.get("reading"), dict) else {}
+
+        return {
+            "meter_id": meter.get("meterId"),
+            "meter_no": meter.get("meterNo"),
+            "meter_sequence_no": meter.get("meterSequenceNo"),
+            "placement": meter.get("placement"),
+            "meter_type": meter.get("meterType"),
+            "allocation_unit": meter.get("allocationUnit"),
+            "unit_code": meter.get("unit"),
+            "mounting_date": meter.get("mountingDate"),
+            "dismounted_date": meter.get("dismountedDate"),
+            "reading_id": reading.get("readingId"),
+            "reading_date": reading.get("readingDate"),
+            "best_startdate": (self.coordinator.data or {}).get("best_startdate"),
+        }
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        consumer = (self.coordinator.data or {}).get("consumer") or {}
+        consumer_name = (
+            consumer.get("consumerName") if isinstance(consumer, dict) else None
         )
-        return attrs
+        building_no = consumer.get("buildingNo") if isinstance(consumer, dict) else None
+
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"consumer_{building_no}_{consumer_name}")},
+            manufacturer="Brunata",
+            model="Online",
+            name=consumer_name or "Brunata Consumer",
+        )
