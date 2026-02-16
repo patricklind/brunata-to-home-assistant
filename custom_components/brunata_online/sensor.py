@@ -70,12 +70,16 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
         row = self._current_row
         meter = row.get("meter", {}) if row else {}
         meter_no = meter.get("meterNo") or meter_key[2]
-        placement = meter.get("placement") or "Meter"
+        self._meter_identifier = str(
+            meter.get("meterId") or meter_key[0] or meter_no or meter_key[1]
+        )
+        self._meter_no = str(meter_no or self._meter_identifier)
+        self._placement = str(meter.get("placement") or "Meter")
 
         self._attr_unique_id = (
             f"{DOMAIN}_{meter_key[0]}_{meter_key[1]}_{meter_key[2]}_{meter_key[3]}"
         )
-        self._attr_name = f"{placement} {meter_no}".strip()
+        self._attr_name = "Reading"
 
     @property
     def _current_row(self) -> dict[str, Any] | None:
@@ -140,15 +144,18 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
 
     @property
     def device_info(self) -> DeviceInfo:
-        consumer = (self.coordinator.data or {}).get("consumer") or {}
-        consumer_name = (
-            consumer.get("consumerName") if isinstance(consumer, dict) else None
+        row = self._current_row
+        meter = (
+            row.get("meter")
+            if isinstance(row, dict) and isinstance(row.get("meter"), dict)
+            else {}
         )
-        building_no = consumer.get("buildingNo") if isinstance(consumer, dict) else None
+        meter_type = str(meter.get("meterType") or "Meter")
 
         return DeviceInfo(
-            identifiers={(DOMAIN, f"consumer_{building_no}_{consumer_name}")},
+            identifiers={(DOMAIN, f"meter_{self._meter_identifier}")},
             manufacturer="Brunata",
-            model="Online",
-            name=consumer_name or "Brunata Consumer",
+            model=meter_type,
+            name=f"{self._placement} {self._meter_no}".strip(),
+            serial_number=self._meter_no,
         )
