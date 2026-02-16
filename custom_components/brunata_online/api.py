@@ -103,9 +103,25 @@ class BrunataOnlineClient:
             filtered.append(row)
 
         filtered.sort(key=lambda x: self._meter_sequence(x))
-        meter_history_30d, meter_history_meta = await self._get_meter_history_30d(
-            filtered
-        )
+        meter_history_30d: dict[str, list[dict[str, Any]]] = {}
+        meter_history_meta: dict[str, Any] = {
+            "days_back": HISTORY_DAYS_BACK,
+            "cached": False,
+            "disabled": False,
+        }
+        try:
+            meter_history_30d, meter_history_meta = await asyncio.wait_for(
+                self._get_meter_history_30d(filtered),
+                timeout=25,
+            )
+        except (TimeoutError, asyncio.TimeoutError):
+            meter_history_meta.update(
+                {"timeout": True, "reason": "history_fetch_timed_out"}
+            )
+        except Exception as err:  # pylint: disable=broad-except
+            meter_history_meta.update(
+                {"error": type(err).__name__, "reason": "history_fetch_failed"}
+            )
 
         return {
             "fetched_at": datetime.now(timezone.utc).isoformat(),
