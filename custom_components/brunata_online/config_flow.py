@@ -1,12 +1,16 @@
 """Adds config flow for Brunata Online."""
 
+import logging
+
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import voluptuous as vol
 
-from .api import BrunataOnlineApiClient
+from .api import BrunataOnlineApiClient, BrunataOnlineAuthError
 from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN, PLATFORMS
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class BrunataOnlineFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -64,8 +68,12 @@ class BrunataOnlineFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             client = BrunataOnlineApiClient(username, password, session)
             await client.async_get_data()
             return True
-        except Exception:  # pylint: disable=broad-except
-            pass
+        except BrunataOnlineAuthError as err:
+            _LOGGER.warning("Brunata authentication failed: %s", err)
+        except Exception as err:  # pylint: disable=broad-except
+            _LOGGER.exception(
+                "Unexpected error while validating Brunata credentials: %s", err
+            )
         return False
 
 
