@@ -7,7 +7,7 @@ DOMAIN_DATA = f"{DOMAIN}_data"
 VERSION = "0.9.2"
 
 ATTRIBUTION = "Data provided by online.brunata.com"
-ISSUE_URL = "https://github.com/YukiElectronics/ha-brunata/issues"
+ISSUE_URL = "https://github.com/patricklind/brunata-to-home-assistant/issues"
 
 # Icons
 ICON = "mdi:home-thermometer-outline"

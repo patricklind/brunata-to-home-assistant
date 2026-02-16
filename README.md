@@ -35,14 +35,14 @@ Each meter is exposed as a Home Assistant sensor with the latest reading.
 
 ## Credits
 
-Based on [@YukiElectronics](https://github.com/YukiElectronics)'s [ha-brunata][ha-brunata] integration.
+Project repository: [ha-brunata][ha-brunata].
 
 Azure AD B2C login flow based on [@itchannel](https://github.com/itchannel)'s [FordPass Integration][fordpass].
 
 ---
 
 [brunata]: https://online.brunata.com
-[ha-brunata]: https://github.com/YukiElectronics/ha-brunata
+[ha-brunata]: https://github.com/patricklind/brunata-to-home-assistant
 [fordpass]: https://github.com/itchannel/fordpass-ha
 [hacs]: https://hacs.xyz
 [hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge
