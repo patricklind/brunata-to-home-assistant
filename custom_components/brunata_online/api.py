@@ -81,7 +81,11 @@ class _TokenState:
         return bool(self.access_token) and now < (self.access_expires_at - 60)
 
     def refresh_valid(self, now: float) -> bool:
-        return bool(self.refresh_token) and now < (self.refresh_expires_at - 60)
+        # Some Azure responses omit refresh-token expiry fields.
+        # In that case refresh_expires_at stays <= 0 and we treat it as unknown-but-usable.
+        return bool(self.refresh_token) and (
+            self.refresh_expires_at <= 0 or now < (self.refresh_expires_at - 60)
+        )
 
 
 def _to_base64url_no_pad(data: bytes) -> str:
@@ -109,7 +113,13 @@ def _epoch_from_token_field(value: Any) -> float | None:
         return None
 
 
-def _compute_expiry(now: float, tokens: dict[str, Any], on_key: str, in_key: str) -> float:
+def _compute_expiry(
+    now: float,
+    tokens: dict[str, Any],
+    on_key: str,
+    in_key: str,
+    default_seconds: float = 0,
+) -> float:
     """Return epoch seconds for expiry, with a conservative fallback."""
     ts = _epoch_from_token_field(tokens.get(on_key))
     if ts is not None and ts > 0:
@@ -118,6 +128,8 @@ def _compute_expiry(now: float, tokens: dict[str, Any], on_key: str, in_key: str
         seconds = float(tokens.get(in_key, 0))
     except (TypeError, ValueError):
         seconds = 0
+    if seconds <= 0:
+        seconds = default_seconds
     return now + seconds
 
 
@@ -278,9 +290,15 @@ class BrunataOnlineApiClient:
             raise BrunataOnlineAuthError("No access_token in token response")
 
         token_type = tokens.get("token_type") or "Bearer"
-        access_expires_at = _compute_expiry(now, tokens, "expires_on", "expires_in")
+        access_expires_at = _compute_expiry(
+            now, tokens, "expires_on", "expires_in", default_seconds=300
+        )
         refresh_expires_at = _compute_expiry(
-            now, tokens, "refresh_token_expires_on", "refresh_token_expires_in"
+            now,
+            tokens,
+            "refresh_token_expires_on",
+            "refresh_token_expires_in",
+            default_seconds=0,
         )
 
         self._token_state = _TokenState(

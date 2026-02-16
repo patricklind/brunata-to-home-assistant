@@ -50,7 +50,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     coordinator.platforms = [p for p in PLATFORMS if entry.options.get(p, True)]
     await hass.config_entries.async_forward_entry_setups(entry, coordinator.platforms)
 
-    entry.add_update_listener(async_reload_entry)
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
     return True
 
 

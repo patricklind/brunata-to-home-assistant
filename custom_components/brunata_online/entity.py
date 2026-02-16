@@ -22,9 +22,10 @@ class BrunataOnlineEntity(CoordinatorEntity):
     @property
     def extra_state_attributes(self):
         """Return the state attributes."""
+        data = self.coordinator.data or {}
         return {
             "attribution": ATTRIBUTION,
-            "fetched_at": self.coordinator.data.get("fetched_at"),
-            "date": self.coordinator.data.get("date"),
+            "fetched_at": data.get("fetched_at"),
+            "date": data.get("date"),
             "integration": DOMAIN,
         }
