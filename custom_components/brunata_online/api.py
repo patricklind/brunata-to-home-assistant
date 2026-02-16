@@ -96,6 +96,10 @@ def _new_code_verifier() -> str:
     return re.sub(r"[^a-zA-Z0-9]+", "", verifier)
 
 
+def _new_state_token() -> str:
+    return _to_base64url_no_pad(os.urandom(16))
+
+
 def _code_challenge_s256(verifier: str) -> str:
     digest = hashlib.sha256(verifier.encode("utf-8")).digest()
     return _to_base64url_no_pad(digest)
@@ -356,6 +360,102 @@ class BrunataOnlineApiClient:
             redirect_uri=redirect_uri,
         )
 
+    def _extract_transaction_id(self, page_url: str, page_html: str) -> str:
+        parsed = urllib.parse.urlparse(page_url)
+        qs = urllib.parse.parse_qs(parsed.query)
+        for key in ("tx", "transId", "transactionId"):
+            value = (qs.get(key) or [None])[0]
+            if value:
+                return str(value)
+
+        settings_match = re.search(
+            r"(?:var|window\.)\s*SETTINGS\s*=\s*(\{.*?\});",
+            page_html,
+            flags=re.DOTALL,
+        )
+        if settings_match:
+            settings_txt = settings_match.group(1)
+            for pattern in (
+                r'"transId"\s*:\s*"([^"]+)"',
+                r"'transId'\s*:\s*'([^']+)'",
+                r"\btransId\b\s*[:=]\s*\"([^\"]+)\"",
+                r"\btransId\b\s*[:=]\s*'([^']+)'",
+            ):
+                trans_match = re.search(pattern, settings_txt)
+                if trans_match:
+                    return str(trans_match.group(1))
+
+        for pattern in (
+            r'"transId"\s*:\s*"([^"]+)"',
+            r"'transId'\s*:\s*'([^']+)'",
+            r"\btransId\b\s*[:=]\s*\"([^\"]+)\"",
+            r"\btransId\b\s*[:=]\s*'([^']+)'",
+            r'"tx"\s*:\s*"([^"]+)"',
+            r"'tx'\s*:\s*'([^']+)'",
+        ):
+            trans_match = re.search(pattern, page_html)
+            if trans_match:
+                return str(trans_match.group(1))
+
+        raise BrunataOnlineAuthError("Failed to extract transaction id from login page")
+
+    def _extract_csrf_token(self, response: requests.Response) -> str:
+        csrf_token = response.cookies.get("x-ms-cpim-csrf")
+        if csrf_token:
+            return str(csrf_token)
+
+        for pattern in (
+            r'name="csrf_token"\s+value="([^"]+)"',
+            r'"csrf"\s*:\s*"([^"]+)"',
+            r'"csrfToken"\s*:\s*"([^"]+)"',
+        ):
+            token_match = re.search(pattern, response.text)
+            if token_match:
+                return str(token_match.group(1))
+
+        raise BrunataOnlineAuthError("Missing CSRF token during B2C auth")
+
+    def _extract_redirect_location(
+        self, response: requests.Response, redirect_uri: str
+    ) -> str:
+        location = response.headers.get("Location")
+        if not location:
+            for pattern in (
+                r"""location\.href\s*=\s*["']([^"']+)["']""",
+                r"""url=([^"'>\s]+)""",
+            ):
+                loc_match = re.search(pattern, response.text, flags=re.IGNORECASE)
+                if loc_match:
+                    location = loc_match.group(1)
+                    break
+
+        if not location:
+            raise BrunataOnlineAuthError("Missing redirect location while retrieving auth code")
+
+        redirect = urllib.parse.urlparse(redirect_uri)
+        target = urllib.parse.urlparse(location)
+        if not (
+            location.startswith(redirect_uri)
+            or (target.netloc == redirect.netloc and target.path == redirect.path)
+        ):
+            raise BrunataOnlineAuthError("Unexpected redirect target while retrieving auth code")
+
+        return location
+
+    @staticmethod
+    def _extract_b2c_error_text(payload: str) -> str | None:
+        patterns = (
+            r"(AADB2C\d+:[^\r\n<]+)",
+            r'"message"\s*:\s*"([^"]+)"',
+            r'"userMessage"\s*:\s*"([^"]+)"',
+            r'"error_description"\s*:\s*"([^"]+)"',
+        )
+        for pattern in patterns:
+            match = re.search(pattern, payload, flags=re.IGNORECASE)
+            if match:
+                return str(match.group(1)).strip()
+        return None
+
     def _b2c_auth_sync(
         self, client_id: str, redirect_uri: str, code_challenge_method: str
     ) -> dict[str, Any]:
@@ -370,45 +470,41 @@ class BrunataOnlineApiClient:
         with requests.Session() as s:
             s.headers.update(DEFAULT_HEADERS)
 
+            authorize_params = {
+                "client_id": client_id,
+                "redirect_uri": redirect_uri,
+                "scope": f"{client_id} offline_access",
+                "response_type": "code",
+                "response_mode": "query",
+                "code_challenge": code_challenge,
+                "code_challenge_method": code_challenge_method,
+                "nonce": _new_state_token(),
+                "state": _new_state_token(),
+            }
+
+            req_code: requests.Response | None = None
+            auth_errors: list[str] = []
+
             # 1) Get initial auth page (follows redirects to B2C login HTML).
-            req_code = s.get(
-                f"{AUTH_BASE_URL}/authorize",
-                params={
-                    "client_id": client_id,
-                    "redirect_uri": redirect_uri,
-                    "scope": f"{client_id} offline_access",
-                    "response_type": "code",
-                    "code_challenge": code_challenge,
-                    "code_challenge_method": code_challenge_method,
-                },
-                timeout=30,
-            )
-            req_code.raise_for_status()
+            for authorize_url in (f"{AUTH_BASE_URL}/authorize", f"{OAUTH2_URL}/authorize"):
+                try:
+                    candidate = s.get(authorize_url, params=authorize_params, timeout=30)
+                    candidate.raise_for_status()
+                    req_code = candidate
+                    break
+                except Exception as err:  # pylint: disable=broad-except
+                    auth_errors.append(f"{authorize_url}: {err}")
 
-            csrf_token = req_code.cookies.get("x-ms-cpim-csrf")
-            if not csrf_token:
-                raise BrunataOnlineAuthError("Missing CSRF cookie during B2C auth")
-
-            # 2) Extract transaction ID from the login HTML.
-            settings_match = re.search(r"var SETTINGS = (\{[^;]*\});", req_code.text)
-            if not settings_match:
+            if req_code is None:
                 raise BrunataOnlineAuthError(
-                    "Failed to locate B2C SETTINGS in login page"
-                )
+                    "Failed loading B2C authorize page"
+                ) from Exception("; ".join(auth_errors))
 
-            settings_txt = settings_match.group(1)
-            trans_match = re.search(r'"transId"\s*:\s*"([^"]+)"', settings_txt)
-            if not trans_match:
-                # Fallback for slightly different formatting
-                trans_match = re.search(r'transId"\s*:\s*"([^"]+)"', settings_txt)
-            if not trans_match:
-                raise BrunataOnlineAuthError(
-                    "Failed to extract transaction id from login page"
-                )
-            transaction_id = trans_match.group(1)
+            csrf_token = self._extract_csrf_token(req_code)
+            transaction_id = self._extract_transaction_id(str(req_code.url), req_code.text)
 
             # 3) Post credentials.
-            s.post(
+            self_asserted_resp = s.post(
                 f"{AUTHN_URL}/SelfAsserted",
                 params={"tx": transaction_id, "p": OAUTH2_PROFILE},
                 data={
@@ -420,10 +516,35 @@ class BrunataOnlineApiClient:
                     "Referer": str(req_code.url),
                     "X-Csrf-Token": csrf_token,
                     "X-Requested-With": "XMLHttpRequest",
+                    "Origin": f"{urllib.parse.urlparse(str(req_code.url)).scheme}://{urllib.parse.urlparse(str(req_code.url)).netloc}",
                 },
                 allow_redirects=False,
                 timeout=30,
             )
+            if self_asserted_resp.status_code >= 400:
+                error_txt = self._extract_b2c_error_text(self_asserted_resp.text)
+                raise BrunataOnlineAuthError(
+                    error_txt
+                    or (
+                        f"Credential submit failed with status "
+                        f"{self_asserted_resp.status_code}"
+                    )
+                )
+
+            try:
+                self_asserted_payload = self_asserted_resp.json()
+            except ValueError:
+                self_asserted_payload = {}
+
+            if isinstance(self_asserted_payload, dict):
+                status = str(self_asserted_payload.get("status", ""))
+                if status and status not in {"200", "201"}:
+                    error_txt = self._extract_b2c_error_text(
+                        str(self_asserted_payload)
+                    ) or str(self_asserted_payload.get("message") or "")
+                    raise BrunataOnlineAuthError(
+                        error_txt or f"Credential submit returned status {status}"
+                    )
 
             # 4) Confirm login, capture auth code via redirect Location.
             req_auth = s.get(
@@ -437,15 +558,13 @@ class BrunataOnlineApiClient:
                 allow_redirects=False,
                 timeout=30,
             )
-            location = req_auth.headers.get("Location")
-            if not location:
+            if req_auth.status_code >= 400:
+                error_txt = self._extract_b2c_error_text(req_auth.text)
                 raise BrunataOnlineAuthError(
-                    "Missing redirect Location while retrieving auth code"
+                    error_txt
+                    or f"CombinedSigninAndSignup failed ({req_auth.status_code})"
                 )
-            if not location.startswith(redirect_uri):
-                raise BrunataOnlineAuthError(
-                    "Unexpected redirect target while retrieving auth code"
-                )
+            location = self._extract_redirect_location(req_auth, redirect_uri)
 
             parsed = urllib.parse.urlparse(location)
             qs = urllib.parse.parse_qs(parsed.query)
