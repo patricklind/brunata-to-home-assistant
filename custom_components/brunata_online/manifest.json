@@ -1,7 +1,7 @@
 {
   "domain": "brunata_online",
   "name": "Brunata Online",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "documentation": "https://github.com/patricklind/brunata-to-home-assistant",
   "issue_tracker": "https://github.com/patricklind/brunata-to-home-assistant/issues",
   "codeowners": [
