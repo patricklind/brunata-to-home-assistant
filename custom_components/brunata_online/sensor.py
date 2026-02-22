@@ -231,6 +231,72 @@ def _history_delta(points: list[dict[str, Any]]) -> float | None:
     return round(delta, 3)
 
 
+def _all_meter_rows(coordinator_data: dict[str, Any] | None) -> list[dict[str, Any]]:
+    rows = (coordinator_data or {}).get("meters")
+    if not isinstance(rows, list):
+        return []
+    return [row for row in rows if isinstance(row, dict)]
+
+
+def _rows_for_mediums(
+    coordinator_data: dict[str, Any] | None, mediums: set[str]
+) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    for row in _all_meter_rows(coordinator_data):
+        meter = row.get("meter") if isinstance(row.get("meter"), dict) else {}
+        medium = _meter_medium_label(
+            meter.get("meterType"), meter.get("allocationUnit")
+        )
+        if medium in mediums:
+            result.append(row)
+    return result
+
+
+def _sum_current_values(rows: list[dict[str, Any]]) -> float | None:
+    total = 0.0
+    count = 0
+    for row in rows:
+        reading = row.get("reading") if isinstance(row.get("reading"), dict) else {}
+        value = _normalize_reading_value(reading.get("value"))
+        if value is None:
+            continue
+        total += float(value)
+        count += 1
+    if count == 0:
+        return None
+    return round(total, 3)
+
+
+def _sum_30d_deltas(
+    coordinator_data: dict[str, Any] | None,
+    rows: list[dict[str, Any]],
+) -> float | None:
+    total = 0.0
+    count = 0
+    for row in rows:
+        meter_key = _row_key(row)
+        points = _history_points_for_meter(coordinator_data, meter_key)
+        delta = _history_delta(points)
+        if delta is None:
+            continue
+        total += float(delta)
+        count += 1
+    if count == 0:
+        return None
+    return round(total, 3)
+
+
+def _row_serial(row: dict[str, Any]) -> str | None:
+    meter = row.get("meter") if isinstance(row.get("meter"), dict) else {}
+    serial = (
+        meter.get("serialNumber") or meter.get("serialNo") or meter.get("meterNo")
+    )
+    if serial is None:
+        return None
+    serial_text = str(serial).strip()
+    return serial_text or None
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -239,7 +305,7 @@ async def async_setup_entry(
     """Set up Brunata sensors from config entry."""
     coordinator: BrunataDataCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    known_sensors: set[tuple[tuple[str, str, str, str], str]] = set()
+    known_sensors: set[str] = set()
 
     def _add_new_entities() -> None:
         meters = (coordinator.data or {}).get("meters") or []
@@ -248,25 +314,53 @@ async def async_setup_entry(
             if not isinstance(row, dict):
                 continue
             key = _row_key(row)
-            raw_token = (key, "raw")
+            meter_id = _history_key_from_row_key(key)
+            raw_token = f"{meter_id}|raw"
             if raw_token not in known_sensors:
                 known_sensors.add(raw_token)
                 new_entities.append(BrunataMeterSensor(coordinator, key))
 
-            distributed_token = (key, "distributed")
+            distributed_token = f"{meter_id}|distributed"
             if distributed_token not in known_sensors and _supports_distributed_sensor(
                 row
             ):
                 known_sensors.add(distributed_token)
                 new_entities.append(BrunataDistributedMeterSensor(coordinator, key))
 
-            last_30_days_token = (key, "last_30_days")
+            last_30_days_token = f"{meter_id}|last_30_days"
             if (
                 last_30_days_token not in known_sensors
                 and _supports_30d_consumption_sensor(row)
             ):
                 known_sensors.add(last_30_days_token)
                 new_entities.append(BrunataLast30DaysConsumptionSensor(coordinator, key))
+
+        aggregate_definitions = (
+            ("water_total", {"cold_water", "hot_water", "water"}),
+            ("water_cold_total", {"cold_water"}),
+            ("water_hot_total", {"hot_water"}),
+        )
+        for aggregate_key, mediums in aggregate_definitions:
+            if not _rows_for_mediums(coordinator.data, mediums):
+                continue
+
+            total_token = f"aggregate|{aggregate_key}|total"
+            if total_token not in known_sensors:
+                known_sensors.add(total_token)
+                new_entities.append(
+                    BrunataAggregateWaterTotalSensor(
+                        coordinator, aggregate_key, mediums
+                    )
+                )
+
+            last_30_days_token = f"aggregate|{aggregate_key}|last_30_days"
+            if last_30_days_token not in known_sensors:
+                known_sensors.add(last_30_days_token)
+                new_entities.append(
+                    BrunataAggregateWaterLast30DaysSensor(
+                        coordinator, aggregate_key, mediums
+                    )
+                )
 
         if new_entities:
             async_add_entities(new_entities)
@@ -575,6 +669,118 @@ class BrunataLast30DaysConsumptionSensor(BrunataMeterSensor):
                     if isinstance(last_point, dict)
                     else None
                 ),
+            }
+        )
+        return attrs
+
+
+class _BrunataAggregateWaterBase(
+    CoordinatorEntity[BrunataDataCoordinator], SensorEntity
+):
+    """Base class for aggregate water sensors."""
+
+    _attr_has_entity_name = True
+    _attr_native_unit_of_measurement = "m³"
+    _attr_device_class = SensorDeviceClass.WATER
+
+    def __init__(
+        self,
+        coordinator: BrunataDataCoordinator,
+        scope_key: str,
+        mediums: set[str],
+    ) -> None:
+        super().__init__(coordinator)
+        self._scope_key = scope_key
+        self._mediums = mediums
+
+    @property
+    def _rows(self) -> list[dict[str, Any]]:
+        return _rows_for_mediums(self.coordinator.data, self._mediums)
+
+    @property
+    def available(self) -> bool:
+        return super().available and bool(self._rows)
+
+    @property
+    def _scope_label(self) -> str:
+        if self._scope_key == "water_hot_total":
+            return "Hot water"
+        if self._scope_key == "water_cold_total":
+            return "Cold water"
+        return "Water"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"aggregate_{self._scope_key}")},
+            manufacturer="Brunata",
+            model="Virtual aggregate",
+            name=f"Brunata {self._scope_label} aggregate",
+        )
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        rows = self._rows
+        serials = [serial for serial in (_row_serial(row) for row in rows) if serial]
+        return {
+            "meter_mediums": sorted(self._mediums),
+            "source_meter_count": len(rows),
+            "source_meter_serials": serials,
+        }
+
+
+class BrunataAggregateWaterTotalSensor(_BrunataAggregateWaterBase):
+    """Aggregate total water sensor for Energy/Water dashboard."""
+
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+
+    def __init__(
+        self,
+        coordinator: BrunataDataCoordinator,
+        scope_key: str,
+        mediums: set[str],
+    ) -> None:
+        super().__init__(coordinator, scope_key, mediums)
+        self._attr_unique_id = f"{DOMAIN}_{scope_key}"
+        self._attr_name = f"Brunata {self._scope_label} total"
+
+    @property
+    def native_value(self):
+        return _sum_current_values(self._rows)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        attrs = dict(super().extra_state_attributes)
+        attrs["recommended_for_energy_water_dashboard"] = True
+        return attrs
+
+
+class BrunataAggregateWaterLast30DaysSensor(_BrunataAggregateWaterBase):
+    """Aggregate 30-day water consumption for overview cards."""
+
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(
+        self,
+        coordinator: BrunataDataCoordinator,
+        scope_key: str,
+        mediums: set[str],
+    ) -> None:
+        super().__init__(coordinator, scope_key, mediums)
+        self._attr_unique_id = f"{DOMAIN}_{scope_key}_last_30_days"
+        self._attr_name = f"Brunata {self._scope_label} last 30 days"
+
+    @property
+    def native_value(self):
+        return _sum_30d_deltas(self.coordinator.data, self._rows)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        attrs = dict(super().extra_state_attributes)
+        attrs.update(
+            {
+                "history_window_days": 30,
+                "recommended_for_energy_water_dashboard": False,
             }
         )
         return attrs

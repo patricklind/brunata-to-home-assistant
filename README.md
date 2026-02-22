@@ -31,4 +31,10 @@ Custom integration for Home Assistant that reads meter values from [online.bruna
   calculated 30-day consumption (`consumption_last_30_days`) when available.
 - The integration also creates dedicated per-meter sensors for rolling
   `... last 30 days` consumption.
+- For Home Assistant **Energy -> Water**, use the aggregate total sensors:
+  - `sensor.brunata_water_total` (all water meters combined)
+  - `sensor.brunata_cold_water_total` (cold water combined)
+  - `sensor.brunata_hot_water_total` (hot water combined)
+  These are exposed with `device_class=water`, `state_class=total_increasing`,
+  and unit `m³` to match dashboard requirements.
 - If Brunata changes web endpoints, this integration may need updates.
