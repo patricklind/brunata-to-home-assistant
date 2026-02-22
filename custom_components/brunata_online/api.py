@@ -236,26 +236,28 @@ class BrunataOnlineClient:
             (now_utc - timedelta(days=offset)).date()
             for offset in range(HISTORY_DAYS_BACK, -1, -1)
         ]
-        startdate_suffix = self._history_startdate_suffix()
+        startdate_suffixes = self._history_startdate_suffixes()
         semaphore = asyncio.Semaphore(MAX_HISTORY_PARALLEL_REQUESTS)
 
         async def _fetch_day(
             day_value: date,
         ) -> tuple[str, list[dict[str, Any]] | None]:
             async with semaphore:
-                startdate = f"{day_value.isoformat()}{startdate_suffix}"
-                try:
-                    rows = await self._api_get_json(
-                        "/consumer/meters",
-                        params={"startdate": startdate},
-                        timeout=HISTORY_REQUEST_TIMEOUT,
-                        max_attempts=1,
-                    )
-                except Exception:  # pylint: disable=broad-except
-                    return day_value.isoformat(), None
-                if not isinstance(rows, list):
-                    return day_value.isoformat(), []
-                return day_value.isoformat(), rows
+                for startdate in self._history_startdate_variants(
+                    day_value, startdate_suffixes
+                ):
+                    try:
+                        rows = await self._api_get_json(
+                            "/consumer/meters",
+                            params={"startdate": startdate},
+                            timeout=HISTORY_REQUEST_TIMEOUT,
+                            max_attempts=1,
+                        )
+                    except Exception:  # pylint: disable=broad-except
+                        continue
+                    if isinstance(rows, list):
+                        return day_value.isoformat(), rows
+                return day_value.isoformat(), None
 
         day_results = await asyncio.gather(*(_fetch_day(day) for day in day_values))
 
@@ -626,19 +628,25 @@ class BrunataOnlineClient:
             ]
         )
 
-    def _history_startdate_suffix(self) -> str:
+    def _history_startdate_suffixes(self) -> list[str]:
         startdate = self._best_startdate
-        if not startdate:
-            return ""
+        candidates: list[str] = []
 
-        match = re.match(r"^\d{4}-\d{2}-\d{2}(.*)$", startdate)
-        if not match:
-            return ""
+        if startdate:
+            match = re.match(r"^\d{4}-\d{2}-\d{2}(.*)$", startdate)
+            if match:
+                suffix = match.group(1)
+                if suffix:
+                    candidates.append(suffix)
 
-        suffix = match.group(1)
-        if suffix in {"", "T00:00:00Z"}:
-            return ""
-        return suffix
+        # Brunata rejects date-only startdate in many cases; keep explicit time.
+        candidates.extend(["T00:00:00Z", "T00:00:00.000Z", "T00:00:00+01:00"])
+        return list(dict.fromkeys(candidates))
+
+    @staticmethod
+    def _history_startdate_variants(day_value: date, suffixes: list[str]) -> list[str]:
+        day_iso = day_value.isoformat()
+        return [f"{day_iso}{suffix}" for suffix in suffixes if suffix]
 
     @staticmethod
     def _meter_sequence(row: dict[str, Any]) -> int:
