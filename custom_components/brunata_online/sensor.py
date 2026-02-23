@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -19,6 +19,9 @@ from homeassistant.util import dt as dt_util
 
 from . import BrunataDataCoordinator
 from .const import DOMAIN
+
+WATER_CONSUMPTION_WINDOWS_DAYS: tuple[int, ...] = (1, 7, 14, 30)
+HEATING_CONSUMPTION_WINDOWS_DAYS: tuple[int, ...] = (30,)
 
 
 def _meter_medium_label(meter_type: Any, allocation_unit: Any) -> str:
@@ -231,6 +234,90 @@ def _history_delta(points: list[dict[str, Any]]) -> float | None:
     return round(delta, 3)
 
 
+def _window_label(days: int) -> str:
+    return "1 day" if days == 1 else f"{days} days"
+
+
+def _history_point_effective_date(point: dict[str, Any]) -> date | None:
+    """Map Brunata history point to the usage day.
+
+    Brunata readings are commonly stamped around 01:00 for the previous day.
+    """
+    reading_dt = _parse_reading_datetime(point.get("reading_date"))
+    if reading_dt is not None:
+        effective = reading_dt.date()
+        if reading_dt.hour <= 2:
+            effective -= timedelta(days=1)
+        return effective
+
+    point_date_text = str(point.get("date") or "").strip()
+    if not point_date_text:
+        return None
+    try:
+        return date.fromisoformat(point_date_text)
+    except ValueError:
+        return None
+
+
+def _history_window_stats(
+    points: list[dict[str, Any]], window_days: int
+) -> dict[str, Any] | None:
+    """Return consumption stats for a rolling window."""
+    if len(points) < 2:
+        return None
+
+    parsed: list[tuple[date, float]] = []
+    for point in points:
+        point_date = _history_point_effective_date(point)
+        point_value = _normalize_reading_value(point.get("value"))
+        if point_date is None or point_value is None:
+            continue
+        parsed.append((point_date, float(point_value)))
+
+    if len(parsed) < 2:
+        return None
+
+    parsed.sort(key=lambda item: item[0])
+    end_date, end_value = parsed[-1]
+    target_date = end_date - timedelta(days=window_days)
+
+    anchor: tuple[date, float] | None = None
+    for point_date, point_value in reversed(parsed[:-1]):
+        if point_date <= target_date:
+            anchor = (point_date, point_value)
+            break
+
+    if anchor is None:
+        anchor = parsed[0]
+
+    start_date, start_value = anchor
+    if start_date >= end_date:
+        return None
+
+    delta = end_value - start_value
+    if delta < 0:
+        return None
+
+    return {
+        "delta": round(delta, 3),
+        "start_date": start_date.isoformat(),
+        "end_date": end_date.isoformat(),
+        "start_value": start_value,
+        "end_value": end_value,
+        "actual_window_days": (end_date - start_date).days,
+    }
+
+
+def _consumption_windows_for_row(row: dict[str, Any]) -> tuple[int, ...]:
+    meter = row.get("meter") if isinstance(row.get("meter"), dict) else {}
+    medium = _meter_medium_label(meter.get("meterType"), meter.get("allocationUnit"))
+    if _is_water_medium(medium):
+        return WATER_CONSUMPTION_WINDOWS_DAYS
+    if _is_heating_medium(medium):
+        return HEATING_CONSUMPTION_WINDOWS_DAYS
+    return ()
+
+
 def _all_meter_rows(coordinator_data: dict[str, Any] | None) -> list[dict[str, Any]]:
     rows = (coordinator_data or {}).get("meters")
     if not isinstance(rows, list):
@@ -267,19 +354,20 @@ def _sum_current_values(rows: list[dict[str, Any]]) -> float | None:
     return round(total, 3)
 
 
-def _sum_30d_deltas(
+def _sum_window_deltas(
     coordinator_data: dict[str, Any] | None,
     rows: list[dict[str, Any]],
+    window_days: int,
 ) -> float | None:
     total = 0.0
     count = 0
     for row in rows:
         meter_key = _row_key(row)
         points = _history_points_for_meter(coordinator_data, meter_key)
-        delta = _history_delta(points)
-        if delta is None:
+        stats = _history_window_stats(points, window_days)
+        if not stats:
             continue
-        total += float(delta)
+        total += float(stats["delta"])
         count += 1
     if count == 0:
         return None
@@ -327,13 +415,17 @@ async def async_setup_entry(
                 known_sensors.add(distributed_token)
                 new_entities.append(BrunataDistributedMeterSensor(coordinator, key))
 
-            last_30_days_token = f"{meter_id}|last_30_days"
-            if (
-                last_30_days_token not in known_sensors
-                and _supports_30d_consumption_sensor(row)
-            ):
-                known_sensors.add(last_30_days_token)
-                new_entities.append(BrunataLast30DaysConsumptionSensor(coordinator, key))
+            if _supports_30d_consumption_sensor(row):
+                for window_days in _consumption_windows_for_row(row):
+                    last_days_token = f"{meter_id}|last_{window_days}_days"
+                    if last_days_token in known_sensors:
+                        continue
+                    known_sensors.add(last_days_token)
+                    new_entities.append(
+                        BrunataLastDaysConsumptionSensor(
+                            coordinator, key, window_days
+                        )
+                    )
 
         aggregate_definitions = (
             ("water_total", {"cold_water", "hot_water", "water"}),
@@ -353,12 +445,14 @@ async def async_setup_entry(
                     )
                 )
 
-            last_30_days_token = f"aggregate|{aggregate_key}|last_30_days"
-            if last_30_days_token not in known_sensors:
-                known_sensors.add(last_30_days_token)
+            for window_days in WATER_CONSUMPTION_WINDOWS_DAYS:
+                last_days_token = f"aggregate|{aggregate_key}|last_{window_days}_days"
+                if last_days_token in known_sensors:
+                    continue
+                known_sensors.add(last_days_token)
                 new_entities.append(
-                    BrunataAggregateWaterLast30DaysSensor(
-                        coordinator, aggregate_key, mediums
+                    BrunataAggregateWaterLastDaysSensor(
+                        coordinator, aggregate_key, mediums, window_days
                     )
                 )
 
@@ -469,7 +563,7 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
         history_points = _history_points_for_meter(
             self.coordinator.data, self._meter_key
         )
-        history_delta = _history_delta(history_points)
+        history_stats_30d = _history_window_stats(history_points, 30)
         history_meta = (self.coordinator.data or {}).get("meter_history_meta")
         history_updated_at = (
             history_meta.get("updated_at") if isinstance(history_meta, dict) else None
@@ -498,8 +592,8 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
             "history_30d_point_count": len(history_points),
             "history_30d_updated_at": history_updated_at,
         }
-        if history_delta is not None:
-            attrs["consumption_last_30_days"] = history_delta
+        if history_stats_30d is not None:
+            attrs["consumption_last_30_days"] = history_stats_30d["delta"]
         return attrs
 
     @property
@@ -617,27 +711,30 @@ class BrunataDistributedMeterSensor(BrunataMeterSensor):
         super()._handle_coordinator_update()
 
 
-class BrunataLast30DaysConsumptionSensor(BrunataMeterSensor):
-    """Rolling 30-day consumption based on Brunata daily points."""
+class BrunataLastDaysConsumptionSensor(BrunataMeterSensor):
+    """Rolling N-day consumption based on Brunata daily points."""
 
     def __init__(
         self,
         coordinator: BrunataDataCoordinator,
         meter_key: tuple[str, str, str, str],
+        window_days: int,
     ) -> None:
         super().__init__(coordinator, meter_key)
-        self._attr_unique_id = f"{self._attr_unique_id}_last_30_days"
+        self._window_days = window_days
+        self._attr_unique_id = f"{self._attr_unique_id}_last_{window_days}_days"
 
         if _is_heating_medium(self._meter_medium):
             label = "Heating energy" if self._native_unit == "kWh" else "Heating index"
         else:
             label = _meter_sensor_name(self._meter_medium)
-        self._attr_name = f"{label} last 30 days"
+        self._attr_name = f"{label} last {_window_label(window_days)}"
 
     @property
     def native_value(self):
         points = _history_points_for_meter(self.coordinator.data, self._meter_key)
-        return _history_delta(points)
+        stats = _history_window_stats(points, self._window_days)
+        return stats["delta"] if stats else None
 
     @property
     def state_class(self) -> SensorStateClass | None:
@@ -647,27 +744,17 @@ class BrunataLast30DaysConsumptionSensor(BrunataMeterSensor):
     def extra_state_attributes(self) -> dict[str, Any]:
         attrs = dict(super().extra_state_attributes)
         points = _history_points_for_meter(self.coordinator.data, self._meter_key)
-        first_point = points[0] if points else None
-        last_point = points[-1] if points else None
+        stats = _history_window_stats(points, self._window_days)
         attrs.update(
             {
-                "history_window_days": 30,
+                "history_window_days": self._window_days,
                 "history_point_count": len(points),
-                "history_start_date": (
-                    first_point.get("date") if isinstance(first_point, dict) else None
-                ),
-                "history_end_date": (
-                    last_point.get("date") if isinstance(last_point, dict) else None
-                ),
-                "history_start_value": (
-                    _normalize_reading_value(first_point.get("value"))
-                    if isinstance(first_point, dict)
-                    else None
-                ),
-                "history_end_value": (
-                    _normalize_reading_value(last_point.get("value"))
-                    if isinstance(last_point, dict)
-                    else None
+                "history_start_date": stats["start_date"] if stats else None,
+                "history_end_date": stats["end_date"] if stats else None,
+                "history_start_value": stats["start_value"] if stats else None,
+                "history_end_value": stats["end_value"] if stats else None,
+                "history_actual_window_days": (
+                    stats["actual_window_days"] if stats else None
                 ),
             }
         )
@@ -755,8 +842,8 @@ class BrunataAggregateWaterTotalSensor(_BrunataAggregateWaterBase):
         return attrs
 
 
-class BrunataAggregateWaterLast30DaysSensor(_BrunataAggregateWaterBase):
-    """Aggregate 30-day water consumption for overview cards."""
+class BrunataAggregateWaterLastDaysSensor(_BrunataAggregateWaterBase):
+    """Aggregate N-day water consumption for overview cards."""
 
     _attr_state_class = SensorStateClass.MEASUREMENT
 
@@ -765,21 +852,23 @@ class BrunataAggregateWaterLast30DaysSensor(_BrunataAggregateWaterBase):
         coordinator: BrunataDataCoordinator,
         scope_key: str,
         mediums: set[str],
+        window_days: int,
     ) -> None:
         super().__init__(coordinator, scope_key, mediums)
-        self._attr_unique_id = f"{DOMAIN}_{scope_key}_last_30_days"
-        self._attr_name = f"Brunata {self._scope_label} last 30 days"
+        self._window_days = window_days
+        self._attr_unique_id = f"{DOMAIN}_{scope_key}_last_{window_days}_days"
+        self._attr_name = f"Brunata {self._scope_label} last {_window_label(window_days)}"
 
     @property
     def native_value(self):
-        return _sum_30d_deltas(self.coordinator.data, self._rows)
+        return _sum_window_deltas(self.coordinator.data, self._rows, self._window_days)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         attrs = dict(super().extra_state_attributes)
         attrs.update(
             {
-                "history_window_days": 30,
+                "history_window_days": self._window_days,
                 "recommended_for_energy_water_dashboard": False,
             }
         )
