@@ -5,13 +5,21 @@ on:
     branches:
       - main
       - master
-      - dev
-  pull_request:
-  schedule:
-    - cron: "0 0 * * *"
+    paths:
+      - "custom_components/**"
+      - ".github/workflows/tests.yaml"
+      - ".github/workflows/constraints.txt"
+      - ".github/pre-commit.yml"
+      - "hacs.json"
+      - "requirements.txt"
+      - "README.md"
 
 env:
   DEFAULT_PYTHON: 3.12
+
+concurrency:
+  group: linting-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   pre-commit:
