@@ -216,7 +216,9 @@ def authenticate(username: str, password: str) -> tuple[requests.Session, TokenD
     )
     if confirmed.status_code >= 400:
         err = _extract_b2c_error_text(confirmed.text)
-        raise BrunataAuthError(err or f"Signin confirmation failed ({confirmed.status_code})")
+        raise BrunataAuthError(
+            err or f"Signin confirmation failed ({confirmed.status_code})"
+        )
 
     redirect_location = _extract_location_url(confirmed)
     parsed = urllib.parse.urlparse(redirect_location)
@@ -455,7 +457,9 @@ def main() -> int:
         print(f"Failed to fetch /consumer: {err}")
         return 3
 
-    best_date, meters, attempts = pick_best_meter_payload(session, token_data.access_token)
+    best_date, meters, attempts = pick_best_meter_payload(
+        session, token_data.access_token
+    )
     try:
         super_units = api_get_json(
             session, token_data.access_token, "/consumer/superallocationunits"
@@ -483,7 +487,8 @@ def main() -> int:
 
     print(f"Wrote JSON: {OUT_JSON}")
     print(f"Wrote CSV : {OUT_CSV}")
-    print(f"Consumer  : {consumer.get('consumerName') if isinstance(consumer, dict) else '?'}")
+    consumer_name = consumer.get("consumerName") if isinstance(consumer, dict) else "?"
+    print(f"Consumer  : {consumer_name}")
     print(f"Best date : {best_date}")
     print(f"Rows      : {len(meters)}")
     print(f"Readings  : {count_non_null_values(meters)} non-null")

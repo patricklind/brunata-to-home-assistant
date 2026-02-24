@@ -156,7 +156,7 @@ def _parse_reading_datetime(value: Any) -> datetime | None:
 
 
 def _extract_official_point(
-    row: dict[str, Any] | None
+    row: dict[str, Any] | None,
 ) -> tuple[datetime, float] | None:
     """Extract (reading_date, reading_value) for interpolation."""
     if not isinstance(row, dict):
@@ -376,9 +376,7 @@ def _sum_window_deltas(
 
 def _row_serial(row: dict[str, Any]) -> str | None:
     meter = row.get("meter") if isinstance(row.get("meter"), dict) else {}
-    serial = (
-        meter.get("serialNumber") or meter.get("serialNo") or meter.get("meterNo")
-    )
+    serial = meter.get("serialNumber") or meter.get("serialNo") or meter.get("meterNo")
     if serial is None:
         return None
     serial_text = str(serial).strip()
@@ -422,9 +420,7 @@ async def async_setup_entry(
                         continue
                     known_sensors.add(last_days_token)
                     new_entities.append(
-                        BrunataLastDaysConsumptionSensor(
-                            coordinator, key, window_days
-                        )
+                        BrunataLastDaysConsumptionSensor(coordinator, key, window_days)
                     )
 
         aggregate_definitions = (
@@ -857,7 +853,9 @@ class BrunataAggregateWaterLastDaysSensor(_BrunataAggregateWaterBase):
         super().__init__(coordinator, scope_key, mediums)
         self._window_days = window_days
         self._attr_unique_id = f"{DOMAIN}_{scope_key}_last_{window_days}_days"
-        self._attr_name = f"Brunata {self._scope_label} last {_window_label(window_days)}"
+        self._attr_name = (
+            f"Brunata {self._scope_label} last {_window_label(window_days)}"
+        )
 
     @property
     def native_value(self):

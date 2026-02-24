@@ -1,12 +1,7 @@
 {
   "name": "Brunata Online",
   "content_in_root": false,
-  "country": [
-    "DK",
-    "SE",
-    "NO",
-    "DE"
-  ],
+  "country": ["DK", "SE", "NO", "DE"],
   "homeassistant": "2024.6.0",
   "render_readme": true
 }

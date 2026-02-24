@@ -1,18 +1,12 @@
 {
   "domain": "brunata_online",
   "name": "Brunata Online",
-  "version": "1.0.18",
-  "documentation": "https://github.com/patricklind/brunata-to-home-assistant",
-  "issue_tracker": "https://github.com/patricklind/brunata-to-home-assistant/issues",
-  "codeowners": [
-    "@patricklind"
-  ],
-  "requirements": [
-    "requests>=2.31.0"
-  ],
+  "codeowners": ["@patricklind"],
   "config_flow": true,
+  "documentation": "https://github.com/patricklind/brunata-to-home-assistant",
   "iot_class": "cloud_polling",
-  "loggers": [
-    "custom_components.brunata_online"
-  ]
+  "issue_tracker": "https://github.com/patricklind/brunata-to-home-assistant/issues",
+  "loggers": ["custom_components.brunata_online"],
+  "requirements": ["requests>=2.31.0"],
+  "version": "1.0.18"
 }
