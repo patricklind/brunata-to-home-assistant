@@ -737,6 +737,14 @@ class BrunataLastDaysConsumptionSensor(BrunataMeterSensor):
         return SensorStateClass.MEASUREMENT
 
     @property
+    def device_class(self) -> SensorDeviceClass | None:
+        # Rolling window consumption is not a monotonic water total, so it
+        # must not advertise the water device class.
+        if _is_heating_medium(self._meter_medium) and self._native_unit == "kWh":
+            return SensorDeviceClass.ENERGY
+        return None
+
+    @property
     def extra_state_attributes(self) -> dict[str, Any]:
         attrs = dict(super().extra_state_attributes)
         points = _history_points_for_meter(self.coordinator.data, self._meter_key)
@@ -860,6 +868,11 @@ class BrunataAggregateWaterLastDaysSensor(_BrunataAggregateWaterBase):
     @property
     def native_value(self):
         return _sum_window_deltas(self.coordinator.data, self._rows, self._window_days)
+
+    @property
+    def device_class(self) -> SensorDeviceClass | None:
+        # These are period deltas, not cumulative water totals.
+        return None
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
