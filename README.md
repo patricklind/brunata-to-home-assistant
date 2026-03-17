@@ -6,6 +6,12 @@
 
 Custom integration for Home Assistant that reads meter values from [online.brunata.com](https://online.brunata.com).
 
+> [!WARNING]
+> We are aware that there are issues in the codebase.
+> This is a hobby project maintained in spare time.
+> Fixes and improvements are implemented when time allows.
+> Do not deploy in production without proper validation.
+
 ## Install with HACS
 
 1. Open **HACS** in Home Assistant.
