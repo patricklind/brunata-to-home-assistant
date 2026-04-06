@@ -157,7 +157,7 @@ class BrunataOnlineClient:
 
         best_date: str | None = None
         best_rows: list[dict[str, Any]] = []
-        best_score = (-1, -1)
+        best_score = (-1, -1, -1)
 
         for startdate in candidates:
             try:
@@ -189,7 +189,7 @@ class BrunataOnlineClient:
                     }
                 )
 
-                score = (non_null, row_count)
+                score = (non_null, row_count, startdate)
                 if score > best_score:
                     best_score = score
                     best_date = startdate
