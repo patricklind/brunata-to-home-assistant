@@ -342,7 +342,7 @@ def pick_best_meter_payload(
     attempts: list[dict[str, Any]] = []
     best_date: str | None = None
     best_rows: list[dict[str, Any]] = []
-    best_score = (-1, -1)  # (non_null_readings, rows_count)
+    best_score = (-1, -1, -1)  # (non_null_readings, rows_count, start_date)
 
     for start_date in build_date_candidates():
         try:
@@ -372,7 +372,7 @@ def pick_best_meter_payload(
                     "non_null": non_null,
                 }
             )
-            score = (non_null, row_count)
+            score = (non_null, row_count, start_date)
             if score > best_score:
                 best_score = score
                 best_date = start_date
