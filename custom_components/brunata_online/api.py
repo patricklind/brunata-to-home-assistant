@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
+import hashlib
 import re
 import secrets
 import time
@@ -24,8 +26,8 @@ AUTHN_URL = (
     f"brunatab2cprod.onmicrosoft.com/{OAUTH2_PROFILE}"
 )
 
-CLIENT_ID = "e1d10965-78dc-4051-a1e5-251483e74d03"
-REDIRECT_URI = f"{BASE_URL}/auth-response"
+CLIENT_ID = "82770188-c92e-4d16-927d-a15c472eda55"
+REDIRECT_URI = f"{BASE_URL}/auth-redirect"
 
 DEFAULT_HEADERS: dict[str, str] = {
     "User-Agent": (
@@ -441,7 +443,9 @@ class BrunataOnlineClient:
 
         for attempt in range(1, AUTH_MAX_ATTEMPTS + 1):
             try:
-                code_verifier = secrets.token_hex(28)
+                # Match the browser app more closely; Brunata stores a long hex verifier.
+                code_verifier = secrets.token_hex(48)
+                code_challenge = _pkce_s256_challenge(code_verifier)
 
                 with requests.Session() as session:
                     session.headers.update(DEFAULT_HEADERS)
@@ -451,8 +455,8 @@ class BrunataOnlineClient:
                         "redirect_uri": REDIRECT_URI,
                         "scope": f"{CLIENT_ID} offline_access",
                         "response_type": "code",
-                        "code_challenge": code_verifier,
-                        "code_challenge_method": "plain",
+                        "code_challenge": code_challenge,
+                        "code_challenge_method": "S256",
                     }
 
                     req_code = session.get(
@@ -515,6 +519,7 @@ class BrunataOnlineClient:
                             "tx": tx,
                             "p": OAUTH2_PROFILE,
                         },
+                        headers={"Referer": str(req_code.url)},
                         allow_redirects=False,
                         timeout=AUTH_REQUEST_TIMEOUT,
                     )
@@ -533,39 +538,31 @@ class BrunataOnlineClient:
                     if not code:
                         raise BrunataAuthError("Authorization code missing in redirect")
 
-                    token_payloads = (
-                        {
-                            "client_id": CLIENT_ID,
-                            "code_verifier": code_verifier,
-                            "code": code,
+                    token_payload = {
+                        "client_id": CLIENT_ID,
+                        "redirect_uri": REDIRECT_URI,
+                        "scope": f"{CLIENT_ID} offline_access",
+                        "code": code,
+                        "grant_type": "authorization_code",
+                        "code_verifier": code_verifier,
+                    }
+                    resp = session.post(
+                        f"{AUTH_BASE_URL}/oauth/token",
+                        data=token_payload,
+                        headers={
+                            "Accept": "application/json, text/plain, */*",
+                            "Content-Type": "application/x-www-form-urlencoded",
+                            "User-Agent": DEFAULT_HEADERS["User-Agent"],
+                            "Referer": redirect_location,
                         },
-                        {
-                            "grant_type": "authorization_code",
-                            "client_id": CLIENT_ID,
-                            "redirect_uri": REDIRECT_URI,
-                            "scope": f"{CLIENT_ID} offline_access",
-                            "code_verifier": code_verifier,
-                            "code": code,
-                        },
+                        timeout=AUTH_REQUEST_TIMEOUT,
                     )
+                    if resp.status_code < 400:
+                        return resp.json()
 
-                    token_error: str | None = None
-                    for payload in token_payloads:
-                        resp = session.post(
-                            f"{AUTH_BASE_URL}/oauth/token",
-                            data=payload,
-                            headers={
-                                "Accept": "application/json, text/plain, */*",
-                                "Content-Type": "application/x-www-form-urlencoded",
-                                "User-Agent": DEFAULT_HEADERS["User-Agent"],
-                            },
-                            timeout=AUTH_REQUEST_TIMEOUT,
-                        )
-                        if resp.status_code < 400:
-                            return resp.json()
-                        token_error = f"{resp.status_code}: {resp.text[:300]}"
-
-                    raise BrunataAuthError(f"Token exchange failed ({token_error})")
+                    raise BrunataAuthError(
+                        f"Token exchange failed ({resp.status_code}: {resp.text[:300]})"
+                    )
             except BrunataAuthError:
                 raise
             except requests.RequestException as err:
@@ -688,6 +685,11 @@ def _to_float(value: Any) -> float | None:
         except ValueError:
             return None
     return None
+
+
+def _pkce_s256_challenge(code_verifier: str) -> str:
+    digest = hashlib.sha256(code_verifier.encode("ascii")).digest()
+    return base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
 
 
 def _extract_transaction_id(page_url: str, page_html: str) -> str:
