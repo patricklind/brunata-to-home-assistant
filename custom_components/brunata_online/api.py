@@ -7,6 +7,7 @@ import base64
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 import hashlib
+import html
 import re
 import secrets
 import time
@@ -17,17 +18,18 @@ from aiohttp import ClientError, ClientResponseError, ClientSession, ClientTimeo
 import requests
 
 BASE_URL = "https://online.brunata.com"
-API_BASE_URL = f"{BASE_URL}/online-webservice/v1/rest"
+API_BASE_URL = f"{BASE_URL}/online-webservice/v2/rest"
 AUTH_BASE_URL = f"{BASE_URL}/online-auth-webservice/v1/rest"
 
-OAUTH2_PROFILE = "B2C_1_signin_username"
-AUTHN_URL = (
-    "https://brunatab2cprod.b2clogin.com/"
-    f"brunatab2cprod.onmicrosoft.com/{OAUTH2_PROFILE}"
-)
+# Brunata migrated its identity provider from Azure AD B2C to Keycloak
+# (realm "online-prod") around 2026-05. Authentication now goes through the
+# standard Keycloak authorization-code + PKCE flow.
+KEYCLOAK_REALM_URL = f"{BASE_URL}/iam/realms/online-prod"
+KEYCLOAK_AUTH_URL = f"{KEYCLOAK_REALM_URL}/protocol/openid-connect/auth"
 
 CLIENT_ID = "82770188-c92e-4d16-927d-a15c472eda55"
-REDIRECT_URI = f"{BASE_URL}/auth-redirect"
+REDIRECT_URI = f"{BASE_URL}/mybrunata/auth-redirect"
+OAUTH_SCOPE = "openid offline_access"
 
 DEFAULT_HEADERS: dict[str, str] = {
     "User-Agent": (
@@ -392,7 +394,7 @@ class BrunataOnlineClient:
             {
                 "grant_type": "refresh_token",
                 "client_id": CLIENT_ID,
-                "scope": f"{CLIENT_ID} offline_access",
+                "scope": OAUTH_SCOPE,
                 "refresh_token": refresh_token,
             },
         )
@@ -443,94 +445,63 @@ class BrunataOnlineClient:
 
         for attempt in range(1, AUTH_MAX_ATTEMPTS + 1):
             try:
-                # Match the browser app more closely; Brunata stores a long hex verifier.
+                # Match the browser app; Brunata uses a long hex PKCE verifier.
                 code_verifier = secrets.token_hex(48)
                 code_challenge = _pkce_s256_challenge(code_verifier)
 
                 with requests.Session() as session:
                     session.headers.update(DEFAULT_HEADERS)
 
+                    # 1. Load the Keycloak login page. This sets the
+                    #    AUTH_SESSION_ID / KC_RESTART cookies that the
+                    #    credential POST below depends on.
                     authorize_params = {
                         "client_id": CLIENT_ID,
                         "redirect_uri": REDIRECT_URI,
-                        "scope": f"{CLIENT_ID} offline_access",
+                        "scope": OAUTH_SCOPE,
                         "response_type": "code",
                         "code_challenge": code_challenge,
                         "code_challenge_method": "S256",
                     }
 
-                    req_code = session.get(
-                        f"{AUTH_BASE_URL}/authorize",
+                    login_page = session.get(
+                        KEYCLOAK_AUTH_URL,
                         params=authorize_params,
                         timeout=AUTH_REQUEST_TIMEOUT,
                     )
-                    req_code.raise_for_status()
+                    login_page.raise_for_status()
 
-                    tx = _extract_transaction_id(str(req_code.url), req_code.text)
-                    csrf = _extract_csrf_token(req_code)
+                    # 2. The login form posts to a one-time
+                    #    login-actions/authenticate URL carrying
+                    #    session_code / execution / tab_id.
+                    form_action = _extract_login_form_action(login_page.text)
 
-                    self_asserted = session.post(
-                        f"{AUTHN_URL}/SelfAsserted",
-                        params={"tx": tx, "p": OAUTH2_PROFILE},
+                    # 3. Submit credentials. On success Keycloak answers with a
+                    #    302 to redirect_uri?code=...; on failure it re-renders
+                    #    the login page with an inline error message.
+                    login = session.post(
+                        form_action,
                         data={
-                            "request_type": "RESPONSE",
-                            "logonIdentifier": self._username,
+                            "username": self._username,
                             "password": self._password,
+                            "credentialId": "",
                         },
                         headers={
-                            "Referer": str(req_code.url),
-                            "X-Csrf-Token": csrf,
-                            "X-Requested-With": "XMLHttpRequest",
-                            "Origin": (
-                                f"{urllib.parse.urlparse(str(req_code.url)).scheme}://"
-                                f"{urllib.parse.urlparse(str(req_code.url)).netloc}"
-                            ),
+                            "Referer": str(login_page.url),
+                            "Content-Type": "application/x-www-form-urlencoded",
+                            "Origin": BASE_URL,
                         },
                         allow_redirects=False,
                         timeout=AUTH_REQUEST_TIMEOUT,
                     )
-                    if self_asserted.status_code >= 400:
-                        error_text = _extract_b2c_error_text(self_asserted.text)
+                    if login.status_code not in {301, 302, 303, 307, 308}:
+                        error_text = _extract_keycloak_error_text(login.text)
                         raise BrunataAuthError(
                             error_text
-                            or f"Credential submit failed ({self_asserted.status_code})"
+                            or f"Credential submit failed ({login.status_code})"
                         )
 
-                    try:
-                        payload = self_asserted.json()
-                    except ValueError:
-                        payload = {}
-                    if isinstance(payload, dict):
-                        status = str(payload.get("status", ""))
-                        if status and status not in {"200", "201"}:
-                            error_text = _extract_b2c_error_text(str(payload)) or str(
-                                payload.get("message") or ""
-                            )
-                            raise BrunataAuthError(
-                                error_text
-                                or f"Credential submit returned status {status}"
-                            )
-
-                    confirmed = session.get(
-                        f"{AUTHN_URL}/api/CombinedSigninAndSignup/confirmed",
-                        params={
-                            "rememberMe": "false",
-                            "csrf_token": csrf,
-                            "tx": tx,
-                            "p": OAUTH2_PROFILE,
-                        },
-                        headers={"Referer": str(req_code.url)},
-                        allow_redirects=False,
-                        timeout=AUTH_REQUEST_TIMEOUT,
-                    )
-                    if confirmed.status_code >= 400:
-                        error_text = _extract_b2c_error_text(confirmed.text)
-                        raise BrunataAuthError(
-                            error_text
-                            or f"Signin confirmation failed ({confirmed.status_code})"
-                        )
-
-                    redirect_location = _extract_location_url(confirmed)
+                    redirect_location = login.headers.get("Location", "")
                     parsed = urllib.parse.urlparse(redirect_location)
                     code = (urllib.parse.parse_qs(parsed.query).get("code") or [None])[
                         0
@@ -538,10 +509,11 @@ class BrunataOnlineClient:
                     if not code:
                         raise BrunataAuthError("Authorization code missing in redirect")
 
+                    # 4. Exchange the code for tokens at the Brunata auth service.
                     token_payload = {
                         "client_id": CLIENT_ID,
                         "redirect_uri": REDIRECT_URI,
-                        "scope": f"{CLIENT_ID} offline_access",
+                        "scope": OAUTH_SCOPE,
                         "code": code,
                         "grant_type": "authorization_code",
                         "code_verifier": code_verifier,
@@ -553,7 +525,7 @@ class BrunataOnlineClient:
                             "Accept": "application/json, text/plain, */*",
                             "Content-Type": "application/x-www-form-urlencoded",
                             "User-Agent": DEFAULT_HEADERS["User-Agent"],
-                            "Referer": redirect_location,
+                            "Referer": REDIRECT_URI,
                         },
                         timeout=AUTH_REQUEST_TIMEOUT,
                     )
@@ -692,75 +664,39 @@ def _pkce_s256_challenge(code_verifier: str) -> str:
     return base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
 
 
-def _extract_transaction_id(page_url: str, page_html: str) -> str:
-    parsed = urllib.parse.urlparse(page_url)
-    qs = urllib.parse.parse_qs(parsed.query)
-    for key in ("tx", "transId", "transactionId"):
-        val = (qs.get(key) or [None])[0]
-        if val:
-            return str(val)
+def _extract_login_form_action(page_html: str) -> str:
+    """Return the Keycloak login form action URL.
 
+    The Keycloak login template posts credentials to a one-time
+    ``login-actions/authenticate`` URL carrying ``session_code`` /
+    ``execution`` / ``tab_id`` query parameters.
+    """
     patterns = (
-        r'"transId"\s*:\s*"([^"]+)"',
-        r"'transId'\s*:\s*'([^']+)'",
-        r"\btransId\b\s*[:=]\s*\"([^\"]+)\"",
-        r"\btransId\b\s*[:=]\s*'([^']+)'",
-        r'"tx"\s*:\s*"([^"]+)"',
-        r"'tx'\s*:\s*'([^']+)'",
+        r'<form[^>]*\bid="kc-form-login"[^>]*\baction="([^"]+)"',
+        r'action="([^"]*login-actions/authenticate[^"]*)"',
     )
     for pattern in patterns:
-        match = re.search(pattern, page_html)
+        match = re.search(pattern, page_html, flags=re.IGNORECASE)
         if match:
-            return str(match.group(1))
+            return html.unescape(match.group(1))
 
-    raise BrunataAuthError("Could not extract transaction id (tx/transId)")
+    raise BrunataAuthError("Could not locate Keycloak login form")
 
 
-def _extract_csrf_token(response: requests.Response) -> str:
-    token = response.cookies.get("x-ms-cpim-csrf")
-    if token:
-        return str(token)
-
+def _extract_keycloak_error_text(page_html: str) -> str | None:
+    """Extract the inline error from a re-rendered Keycloak login page."""
     patterns = (
-        r'name="csrf_token"\s+value="([^"]+)"',
-        r'"csrf"\s*:\s*"([^"]+)"',
-        r'"csrfToken"\s*:\s*"([^"]+)"',
+        r'class="[^"]*kc-feedback-text[^"]*"[^>]*>(.*?)</span>',
+        r'class="[^"]*alert-error[^"]*"[^>]*>(.*?)</div>',
+        r'id="input-error[^"]*"[^>]*>(.*?)<',
     )
     for pattern in patterns:
-        match = re.search(pattern, response.text)
+        match = re.search(pattern, page_html, flags=re.IGNORECASE | re.DOTALL)
         if match:
-            return str(match.group(1))
-
-    raise BrunataAuthError("Could not extract CSRF token")
-
-
-def _extract_location_url(response: requests.Response) -> str:
-    location = response.headers.get("Location")
-    if location:
-        return location
-
-    for pattern in (
-        r"""location\.href\s*=\s*["']([^"']+)["']""",
-        r"""url=([^"'>\s]+)""",
-    ):
-        match = re.search(pattern, response.text, flags=re.IGNORECASE)
-        if match:
-            return str(match.group(1))
-
-    raise BrunataAuthError("Auth redirect location missing")
-
-
-def _extract_b2c_error_text(payload: str) -> str | None:
-    patterns = (
-        r"(AADB2C\d+:[^\r\n<]+)",
-        r'"message"\s*:\s*"([^"]+)"',
-        r'"userMessage"\s*:\s*"([^"]+)"',
-        r'"error_description"\s*:\s*"([^"]+)"',
-    )
-    for pattern in patterns:
-        match = re.search(pattern, payload, flags=re.IGNORECASE)
-        if match:
-            return str(match.group(1)).strip()
+            text = re.sub(r"<[^>]+>", " ", match.group(1))
+            text = re.sub(r"\s+", " ", html.unescape(text)).strip()
+            if text:
+                return text
     return None
 
 
