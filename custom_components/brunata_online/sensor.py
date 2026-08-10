@@ -234,6 +234,34 @@ def _history_delta(points: list[dict[str, Any]]) -> float | None:
     return round(delta, 3)
 
 
+def _latest_history_value(points: list[dict[str, Any]]) -> float | int | None:
+    """Return the newest usable cumulative value from meter history."""
+    for point in reversed(points):
+        value = _normalize_reading_value(point.get("value"))
+        if value is not None:
+            return value
+    return None
+
+
+def _current_or_history_value(
+    coordinator_data: dict[str, Any] | None, row: dict[str, Any]
+) -> float | int | None:
+    """Return the current reading, falling back to the last historical total.
+
+    Brunata can leave the current reading empty for a dismounted transmitter.
+    Its final value still forms the baseline of the physical meter total after a
+    replacement transmitter starts reporting the subsequent consumption.
+    """
+    reading = row.get("reading") if isinstance(row.get("reading"), dict) else {}
+    current_value = _normalize_reading_value(reading.get("value"))
+    if current_value is not None:
+        return current_value
+
+    meter_key = _row_key(row)
+    points = _history_points_for_meter(coordinator_data, meter_key)
+    return _latest_history_value(points)
+
+
 def _window_label(days: int) -> str:
     return "1 day" if days == 1 else f"{days} days"
 
@@ -339,12 +367,13 @@ def _rows_for_mediums(
     return result
 
 
-def _sum_current_values(rows: list[dict[str, Any]]) -> float | None:
+def _sum_current_values(
+    coordinator_data: dict[str, Any] | None, rows: list[dict[str, Any]]
+) -> float | None:
     total = 0.0
     count = 0
     for row in rows:
-        reading = row.get("reading") if isinstance(row.get("reading"), dict) else {}
-        value = _normalize_reading_value(reading.get("value"))
+        value = _current_or_history_value(coordinator_data, row)
         if value is None:
             continue
         total += float(value)
@@ -525,8 +554,7 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
         row = self._current_row
         if not row:
             return None
-        reading = row.get("reading") if isinstance(row.get("reading"), dict) else {}
-        return _normalize_reading_value(reading.get("value"))
+        return _current_or_history_value(self.coordinator.data, row)
 
     @property
     def native_unit_of_measurement(self) -> str | None:
@@ -836,7 +864,7 @@ class BrunataAggregateWaterTotalSensor(_BrunataAggregateWaterBase):
 
     @property
     def native_value(self):
-        return _sum_current_values(self._rows)
+        return _sum_current_values(self.coordinator.data, self._rows)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
