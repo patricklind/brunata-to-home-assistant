@@ -183,6 +183,12 @@ Output files:
    - Integration needs sufficient daily points.
    - First refresh may expose empty `last N days` until history cache is filled.
 
+4. **A water transmitter was replaced**
+   - Brunata may stop returning a current value for the old transmitter while
+     the new transmitter reports only consumption since the exchange.
+   - The total sensors retain the old transmitter's latest historical reading
+     as the baseline and add the replacement transmitter's reading.
+
 ---
 
 ## Maintainer: Tag + Release
