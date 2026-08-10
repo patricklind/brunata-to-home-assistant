@@ -75,6 +75,25 @@ def _extract_login_form_action(page_html: str) -> str:
     raise BrunataAuthError("Could not locate Keycloak login form")
 
 
+def _validate_credential_post_url(url: str) -> None:
+    """Reject a login form that could send credentials outside Brunata."""
+    parsed = urllib.parse.urlparse(url)
+    expected = urllib.parse.urlparse(BASE_URL)
+    try:
+        port = parsed.port
+    except ValueError as err:
+        raise BrunataAuthError(
+            "Keycloak returned an unsafe credential form URL"
+        ) from err
+    if (
+        parsed.scheme != "https"
+        or parsed.hostname != expected.hostname
+        or port not in {None, 443}
+        or not parsed.path.startswith("/iam/realms/online-prod/login-actions/")
+    ):
+        raise BrunataAuthError("Keycloak returned an unsafe credential form URL")
+
+
 def _extract_keycloak_error_text(page_html: str) -> str | None:
     """Extract the inline error from a re-rendered Keycloak login page."""
     patterns = (
@@ -125,6 +144,7 @@ def authenticate(username: str, password: str) -> tuple[requests.Session, TokenD
 
     # 2. Submit credentials to the one-time login-actions/authenticate URL.
     form_action = _extract_login_form_action(login_page.text)
+    _validate_credential_post_url(form_action)
     login = session.post(
         form_action,
         data={"username": username, "password": password, "credentialId": ""},

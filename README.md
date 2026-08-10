@@ -49,7 +49,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     A["Username/password from HA config flow"] --> B["Brunata authorize endpoint"]
-    B --> C["SelfAsserted login"]
+    B --> C["Keycloak credential form"]
     C --> D["Get auth code redirect"]
     D --> E["Token exchange"]
     E --> F["Bearer token for API requests"]
@@ -137,7 +137,6 @@ Use one of:
 Home Assistant must be able to reach:
 
 - `https://online.brunata.com`
-- `https://brunatab2cprod.b2clogin.com`
 
 > [!CAUTION]
 > If logins fail with timeout from Home Assistant but work from browser, verify host networking/MTU.
@@ -172,7 +171,6 @@ Output files:
    - Confirm DNS and outbound HTTPS from Home Assistant host/container.
    - Test:
      - `curl -I https://online.brunata.com`
-     - `curl -I https://brunatab2cprod.b2clogin.com`
 
 2. **Credentials rejected in HA, but browser works**
 
@@ -183,6 +181,12 @@ Output files:
    - Integration needs sufficient daily points.
    - First refresh may expose empty `last N days` until history cache is filled.
 
+4. **A water transmitter was replaced**
+   - Brunata may stop returning a current value for the old transmitter while
+     the new transmitter reports only consumption since the exchange.
+   - The total sensors retain the old transmitter's latest historical reading
+     as the baseline and add the replacement transmitter's reading.
+
 ---
 
 ## Maintainer: Tag + Release
@@ -191,9 +195,13 @@ Output files:
    - `custom_components/brunata_online/manifest.json`
 2. Commit and push `main`.
 3. Create tag:
-   - `git tag vX.Y.Z`
+   - `git tag vX.Y.Z` (the tag must be `v` followed by the manifest version)
    - `git push origin vX.Y.Z`
 4. Workflow `Release from tag` publishes GitHub Release automatically.
+
+The workflow rejects a tag that does not match the version in the integration
+manifest, preventing the Releases and Tags pages from advertising different
+versions.
 
 > [!CAUTION]
 > If tags are pushed from HTTPS token without `workflow` scope, workflow-file changes may be rejected.

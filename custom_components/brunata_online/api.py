@@ -240,6 +240,15 @@ class BrunataOnlineClient:
             (now_utc - timedelta(days=offset)).date()
             for offset in range(HISTORY_DAYS_BACK, -1, -1)
         ]
+        # A dismounted transmitter's final value remains part of the physical
+        # meter total even after its date falls outside the rolling history
+        # window. Re-query that event day so the baseline also survives restarts.
+        for row in current_rows:
+            meter = row.get("meter") if isinstance(row.get("meter"), dict) else {}
+            dismounted_date = _to_date(meter.get("dismountedDate"))
+            if dismounted_date is not None and dismounted_date <= now_utc.date():
+                day_values.append(dismounted_date)
+        day_values = sorted(set(day_values))
         startdate_suffixes = self._history_startdate_suffixes()
         semaphore = asyncio.Semaphore(MAX_HISTORY_PARALLEL_REQUESTS)
 
@@ -310,6 +319,29 @@ class BrunataOnlineClient:
         history: dict[str, list[dict[str, Any]]] = {}
         for meter_key, by_day in meter_daily.items():
             history[meter_key] = [by_day[day] for day in sorted(by_day.keys())]
+
+        # Preserve valid cached days when only part of a refresh succeeds. The
+        # final reading of a dismounted transmitter may be the baseline for its
+        # replacement, so losing it would make the aggregate total decrease.
+        requested_days = {day.isoformat() for day in day_values}
+        if failed_days and self._history_cache:
+            for meter_key, cached_points in self._history_cache.items():
+                by_day = {
+                    str(point.get("date")): point
+                    for point in cached_points
+                    if isinstance(point, dict)
+                    and str(point.get("date")) in requested_days
+                }
+                by_day.update(
+                    {
+                        str(point.get("date")): point
+                        for point in history.get(meter_key, [])
+                        if isinstance(point, dict) and point.get("date")
+                    }
+                )
+                if by_day:
+                    history[meter_key] = [by_day[day] for day in sorted(by_day)]
+
         for meter_key in current_meter_keys:
             history.setdefault(meter_key, [])
 
@@ -475,6 +507,7 @@ class BrunataOnlineClient:
                     #    login-actions/authenticate URL carrying
                     #    session_code / execution / tab_id.
                     form_action = _extract_login_form_action(login_page.text)
+                    _validate_credential_post_url(form_action)
 
                     # 3. Submit credentials. On success Keycloak answers with a
                     #    302 to redirect_uri?code=...; on failure it re-renders
@@ -659,6 +692,19 @@ def _to_float(value: Any) -> float | None:
     return None
 
 
+def _to_date(value: Any) -> date | None:
+    """Parse the date portion of a Brunata timestamp."""
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        return date.fromisoformat(text[:10])
+    except ValueError:
+        return None
+
+
 def _pkce_s256_challenge(code_verifier: str) -> str:
     digest = hashlib.sha256(code_verifier.encode("ascii")).digest()
     return base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
@@ -681,6 +727,25 @@ def _extract_login_form_action(page_html: str) -> str:
             return html.unescape(match.group(1))
 
     raise BrunataAuthError("Could not locate Keycloak login form")
+
+
+def _validate_credential_post_url(url: str) -> None:
+    """Reject a login form that could send credentials outside Brunata."""
+    parsed = urllib.parse.urlparse(url)
+    expected = urllib.parse.urlparse(BASE_URL)
+    try:
+        port = parsed.port
+    except ValueError as err:
+        raise BrunataAuthError(
+            "Keycloak returned an unsafe credential form URL"
+        ) from err
+    if (
+        parsed.scheme != "https"
+        or parsed.hostname != expected.hostname
+        or port not in {None, 443}
+        or not parsed.path.startswith("/iam/realms/online-prod/login-actions/")
+    ):
+        raise BrunataAuthError("Keycloak returned an unsafe credential form URL")
 
 
 def _extract_keycloak_error_text(page_html: str) -> str | None:
