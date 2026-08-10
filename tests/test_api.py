@@ -152,5 +152,51 @@ class HistoryCacheTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(history[meter_key][0]["value"], 84.25)
 
 
+class HistoryFallbackTests(unittest.TestCase):
+    """Verify API payload normalization for replaced transmitters."""
+
+    def test_missing_reading_uses_latest_valid_history_value(self) -> None:
+        row = {
+            "meter": {
+                "meterId": "old",
+                "meterSequenceNo": "1",
+                "meterNo": "hot-water",
+                "allocationUnit": "W",
+            },
+            "reading": {"value": None},
+        }
+        meter_key = api.BrunataOnlineClient._meter_history_key(row)
+
+        api.BrunataOnlineClient._apply_history_fallbacks(
+            [row],
+            {
+                meter_key: [
+                    {"value": "12,5"},
+                    {"value": "invalid"},
+                    {"value": None},
+                ]
+            },
+        )
+
+        self.assertEqual(row["reading"]["value"], 12.5)
+        self.assertIs(row["reading"]["historicalFallback"], True)
+
+    def test_current_zero_is_not_replaced(self) -> None:
+        row = {
+            "meter": {"meterId": "current"},
+            "reading": {"value": 0},
+        }
+        meter_key = api.BrunataOnlineClient._meter_history_key(row)
+
+        api.BrunataOnlineClient._apply_history_fallbacks(
+            [row], {meter_key: [{"value": 99}]}
+        )
+
+        self.assertEqual(row["reading"], {"value": 0})
+
+    def test_boolean_is_not_a_valid_meter_value(self) -> None:
+        self.assertIsNone(api._to_float(True))
+
+
 if __name__ == "__main__":
     unittest.main()

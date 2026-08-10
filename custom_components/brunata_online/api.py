@@ -127,6 +127,8 @@ class BrunataOnlineClient:
                 {"error": type(err).__name__, "reason": "history_fetch_failed"}
             )
 
+        self._apply_history_fallbacks(filtered, meter_history_30d)
+
         return {
             "fetched_at": datetime.now(timezone.utc).isoformat(),
             "consumer": consumer,
@@ -616,6 +618,45 @@ class BrunataOnlineClient:
                 count += 1
         return count
 
+    @classmethod
+    def _apply_history_fallbacks(
+        cls,
+        rows: list[dict[str, Any]],
+        history: dict[str, list[dict[str, Any]]],
+    ) -> None:
+        """Fill missing current readings from the newest historical total.
+
+        Normalizing the payload here keeps transmitter replacement handling out
+        of Home Assistant's entity layer and avoids changing sensor.py, which is
+        frequently updated independently.
+        """
+        for row in rows:
+            reading = row.get("reading")
+            if (
+                isinstance(reading, dict)
+                and _to_float(reading.get("value")) is not None
+            ):
+                continue
+
+            points = history.get(cls._meter_history_key(row))
+            if not isinstance(points, list):
+                continue
+            fallback = None
+            for point in reversed(points):
+                if not isinstance(point, dict):
+                    continue
+                fallback = _to_float(point.get("value"))
+                if fallback is not None:
+                    break
+            if fallback is None:
+                continue
+
+            if not isinstance(reading, dict):
+                reading = {}
+                row["reading"] = reading
+            reading["value"] = fallback
+            reading["historicalFallback"] = True
+
     @staticmethod
     def _meter_history_key(row: dict[str, Any]) -> str:
         meter = row.get("meter") if isinstance(row, dict) else None
@@ -670,7 +711,7 @@ def _to_int(value: Any, default: int) -> int:
 
 
 def _to_float(value: Any) -> float | None:
-    if value is None:
+    if value is None or isinstance(value, bool):
         return None
     if isinstance(value, (int, float)):
         return float(value)

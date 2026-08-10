@@ -19,12 +19,6 @@ from homeassistant.util import dt as dt_util
 
 from . import BrunataDataCoordinator
 from .const import DOMAIN
-from .meter_data import current_or_history_value as _current_or_history_value
-from .meter_data import history_key as _history_key_from_row_key
-from .meter_data import history_points_for_meter as _history_points_for_meter
-from .meter_data import normalize_reading_value as _normalize_reading_value
-from .meter_data import row_key as _row_key
-from .meter_data import sum_current_values as _sum_current_values
 
 WATER_CONSUMPTION_WINDOWS_DAYS: tuple[int, ...] = (1, 7, 14, 30)
 HEATING_CONSUMPTION_WINDOWS_DAYS: tuple[int, ...] = (30,)
@@ -115,6 +109,31 @@ def _heating_format(medium: str, native_unit: str | None) -> str | None:
     return "energy_kwh" if native_unit == "kWh" else "index_units"
 
 
+def _normalize_reading_value(value: Any) -> float | int | None:
+    """Normalize Brunata reading values to numeric values for statistics."""
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return value
+    if isinstance(value, str):
+        text = value.strip().replace(" ", "")
+        if not text:
+            return None
+        if "," in text and "." in text:
+            if text.rfind(",") > text.rfind("."):
+                text = text.replace(".", "").replace(",", ".")
+            else:
+                text = text.replace(",", "")
+        elif "," in text:
+            # Brunata may return decimal-comma values for water readings.
+            text = text.replace(",", ".")
+        try:
+            return float(text)
+        except ValueError:
+            return None
+    return None
+
+
 def _parse_reading_datetime(value: Any) -> datetime | None:
     """Parse Brunata reading timestamp to aware UTC datetime."""
     if value is None:
@@ -173,6 +192,33 @@ def _supports_30d_consumption_sensor(row: dict[str, Any]) -> bool:
     if medium not in {"cold_water", "hot_water", "water", "heating"}:
         return False
     return unit in {"m³", "kWh", "units"}
+
+
+def _row_key(row: dict[str, Any]) -> tuple[str, str, str, str]:
+    meter = row.get("meter") if isinstance(row.get("meter"), dict) else {}
+    return (
+        str(meter.get("meterId") or ""),
+        str(meter.get("meterSequenceNo") or ""),
+        str(meter.get("meterNo") or ""),
+        str(meter.get("allocationUnit") or ""),
+    )
+
+
+def _history_key_from_row_key(meter_key: tuple[str, str, str, str]) -> str:
+    return "|".join(meter_key)
+
+
+def _history_points_for_meter(
+    coordinator_data: dict[str, Any] | None,
+    meter_key: tuple[str, str, str, str],
+) -> list[dict[str, Any]]:
+    history = (coordinator_data or {}).get("meter_history_30d")
+    if not isinstance(history, dict):
+        return []
+    points = history.get(_history_key_from_row_key(meter_key))
+    if not isinstance(points, list):
+        return []
+    return [point for point in points if isinstance(point, dict)]
 
 
 def _history_delta(points: list[dict[str, Any]]) -> float | None:
@@ -291,6 +337,21 @@ def _rows_for_mediums(
         if medium in mediums:
             result.append(row)
     return result
+
+
+def _sum_current_values(rows: list[dict[str, Any]]) -> float | None:
+    total = 0.0
+    count = 0
+    for row in rows:
+        reading = row.get("reading") if isinstance(row.get("reading"), dict) else {}
+        value = _normalize_reading_value(reading.get("value"))
+        if value is None:
+            continue
+        total += float(value)
+        count += 1
+    if count == 0:
+        return None
+    return round(total, 3)
 
 
 def _sum_window_deltas(
@@ -464,7 +525,8 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
         row = self._current_row
         if not row:
             return None
-        return _current_or_history_value(self.coordinator.data, row)
+        reading = row.get("reading") if isinstance(row.get("reading"), dict) else {}
+        return _normalize_reading_value(reading.get("value"))
 
     @property
     def native_unit_of_measurement(self) -> str | None:
@@ -774,7 +836,7 @@ class BrunataAggregateWaterTotalSensor(_BrunataAggregateWaterBase):
 
     @property
     def native_value(self):
-        return _sum_current_values(self.coordinator.data, self._rows)
+        return _sum_current_values(self._rows)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
