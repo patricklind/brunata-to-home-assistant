@@ -18,6 +18,25 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Verify tag matches integration version
+        shell: python
+        run: |
+          import json
+          import os
+
+          with open(
+              "custom_components/brunata_online/manifest.json", encoding="utf-8"
+          ) as manifest_file:
+              version = json.load(manifest_file)["version"]
+
+          tag = os.environ["GITHUB_REF_NAME"]
+          expected_tag = f"v{version}"
+          if tag != expected_tag:
+              raise SystemExit(
+                  f"Release tag {tag!r} does not match manifest version "
+                  f"{version!r}; expected {expected_tag!r}."
+              )
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
