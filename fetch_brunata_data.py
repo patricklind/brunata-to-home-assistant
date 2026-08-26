@@ -263,13 +263,41 @@ def count_non_null_values(meters: Any) -> int:
     return count
 
 
+def meter_key(row: dict[str, Any]) -> str:
+    """Return the stable identity shared by a meter across API snapshots."""
+    meter = row.get("meter") if isinstance(row.get("meter"), dict) else None
+    if not isinstance(meter, dict):
+        return ""
+    return "|".join(
+        [
+            str(meter.get("meterId") or ""),
+            str(meter.get("meterSequenceNo") or ""),
+            str(meter.get("meterNo") or ""),
+            str(meter.get("allocationUnit") or ""),
+        ]
+    )
+
+
+def reading_score(row: dict[str, Any], start_date: str) -> tuple[int, str, str]:
+    """Rank a meter row by validity and freshness."""
+    reading = row.get("reading")
+    value_is_valid = int(
+        isinstance(reading, dict)
+        and reading.get("value") is not None
+        and not isinstance(reading.get("value"), bool)
+    )
+    reading_date = (
+        str(reading.get("readingDate") or "") if isinstance(reading, dict) else ""
+    )
+    return value_is_valid, reading_date, start_date
+
+
 def pick_best_meter_payload(
     session: requests.Session, token: str
 ) -> tuple[str | None, list[dict[str, Any]], list[dict[str, Any]]]:
     attempts: list[dict[str, Any]] = []
     best_date: str | None = None
-    best_rows: list[dict[str, Any]] = []
-    best_score = (-1, -1, -1)  # (non_null_readings, rows_count, start_date)
+    best_rows_by_meter: dict[str, tuple[tuple[int, str, str], dict[str, Any]]] = {}
 
     for start_date in build_date_candidates():
         try:
@@ -299,11 +327,17 @@ def pick_best_meter_payload(
                     "non_null": non_null,
                 }
             )
-            score = (non_null, row_count, start_date)
-            if score > best_score:
-                best_score = score
-                best_date = start_date
-                best_rows = rows
+            best_date = max(best_date or start_date, start_date)
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                key = meter_key(row)
+                if not key:
+                    continue
+                score = reading_score(row, start_date)
+                existing = best_rows_by_meter.get(key)
+                if existing is None or score > existing[0]:
+                    best_rows_by_meter[key] = (score, row)
         except requests.HTTPError as err:
             attempts.append(
                 {"startdate": start_date, "status": "http_error", "error": str(err)}
@@ -313,6 +347,7 @@ def pick_best_meter_payload(
                 {"startdate": start_date, "status": "error", "error": str(err)}
             )
 
+    best_rows = [item[1] for item in best_rows_by_meter.values()]
     return best_date, best_rows, attempts
 
 
@@ -380,19 +415,20 @@ def main() -> int:
 
     try:
         consumer = api_get_json(session, token_data.access_token, "/consumer")
-    except Exception as err:  # pylint: disable=broad-except
-        print(f"Failed to fetch /consumer: {err}")
-        return 3
-
-    best_date, meters, attempts = pick_best_meter_payload(
-        session, token_data.access_token
-    )
-    try:
-        super_units = api_get_json(
-            session, token_data.access_token, "/consumer/superallocationunits"
+        best_date, meters, attempts = pick_best_meter_payload(
+            session, token_data.access_token
         )
-    except Exception:
-        super_units = None
+        try:
+            super_units = api_get_json(
+                session, token_data.access_token, "/consumer/superallocationunits"
+            )
+        except Exception:
+            super_units = None
+    except Exception as err:  # pylint: disable=broad-except
+        print(f"Failed to fetch Brunata data: {err}")
+        return 3
+    finally:
+        session.close()
 
     result = {
         "fetched_at": datetime.now(timezone.utc).isoformat(),

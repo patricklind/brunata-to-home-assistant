@@ -46,6 +46,7 @@ if importlib.util.find_spec("aiohttp") is None:
 
 
 api = _load_module("brunata_api", "custom_components/brunata_online/api.py")
+debug_client = _load_module("brunata_debug_client", "fetch_brunata_data.py")
 
 
 class CredentialPostUrlTests(unittest.TestCase):
@@ -213,6 +214,57 @@ class CurrentMeterSelectionTests(unittest.IsolatedAsyncioTestCase):
         _best_date, rows, _attempts = await client._get_best_meter_rows()
 
         self.assertEqual(rows[0]["reading"]["value"], 100)
+
+
+class DebugClientMeterSelectionTests(unittest.TestCase):
+    """Keep the standalone export client consistent with the integration."""
+
+    def test_uses_newest_valid_reading_per_meter(self) -> None:
+        cold_meter = {"meterId": "cold", "allocationUnit": "K"}
+        hot_meter = {"meterId": "hot", "allocationUnit": "W"}
+        responses = {
+            "2026-07-01": [
+                {
+                    "meter": cold_meter,
+                    "reading": {"value": 100, "readingDate": "2026-07-01"},
+                },
+                {
+                    "meter": hot_meter,
+                    "reading": {"value": 20, "readingDate": "2026-07-01"},
+                },
+            ],
+            "2026-08-01": [
+                {
+                    "meter": cold_meter,
+                    "reading": {"value": 110, "readingDate": "2026-08-01"},
+                },
+                {
+                    "meter": hot_meter,
+                    "reading": {"value": 25, "readingDate": "2026-08-15"},
+                },
+            ],
+        }
+
+        original_candidates = debug_client.build_date_candidates
+        original_get_json = debug_client.api_get_json
+        try:
+            debug_client.build_date_candidates = lambda: [
+                "2026-07-01",
+                "2026-08-01",
+            ]
+            debug_client.api_get_json = lambda _session, _token, _path, params: (
+                responses[params["startdate"]]
+            )
+            best_date, rows, _attempts = debug_client.pick_best_meter_payload(
+                None, "token"
+            )
+        finally:
+            debug_client.build_date_candidates = original_candidates
+            debug_client.api_get_json = original_get_json
+
+        values = {row["meter"]["meterId"]: row["reading"]["value"] for row in rows}
+        self.assertEqual(best_date, "2026-08-01")
+        self.assertEqual(values, {"cold": 110, "hot": 25})
 
 
 class HistoryFallbackTests(unittest.TestCase):
