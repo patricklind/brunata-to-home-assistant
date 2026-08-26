@@ -178,6 +178,7 @@ Output files:
    - Check Home Assistant logs for `TimeoutError` / `ReadTimeout`.
 
 3. **No history/last N days values**
+
    - Integration needs sufficient daily points.
    - First refresh may expose empty `last N days` until history cache is filled.
 

@@ -1,1 +1,133 @@
-{"nodes": [{"id": "c_users_ithh_documents_github_brunata_to_home_assistant_hacs_json", "label": "hacs.json", "file_type": "code", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json", "source_location": "L1"}, {"id": "brunata_to_home_assistant_hacs_name", "label": "name", "file_type": "code", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json", "source_location": "L2"}, {"id": "brunata_to_home_assistant_hacs_content_in_root", "label": "content_in_root", "file_type": "code", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json", "source_location": "L3"}, {"id": "brunata_to_home_assistant_hacs_country", "label": "country", "file_type": "code", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json", "source_location": "L4"}, {"id": "brunata_to_home_assistant_hacs_homeassistant", "label": "homeassistant", "file_type": "code", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json", "source_location": "L5"}, {"id": "brunata_to_home_assistant_hacs_render_readme", "label": "render_readme", "file_type": "code", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json", "source_location": "L6"}], "edges": [{"source": "c_users_ithh_documents_github_brunata_to_home_assistant_hacs_json", "target": "brunata_to_home_assistant_hacs_name", "relation": "contains", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json", "source_location": "L2", "weight": 1.0}, {"source": "c_users_ithh_documents_github_brunata_to_home_assistant_hacs_json", "target": "brunata_to_home_assistant_hacs_content_in_root", "relation": "contains", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json", "source_location": "L3", "weight": 1.0}, {"source": "c_users_ithh_documents_github_brunata_to_home_assistant_hacs_json", "target": "brunata_to_home_assistant_hacs_country", "relation": "contains", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json", "source_location": "L4", "weight": 1.0}, {"source": "brunata_to_home_assistant_hacs_country", "target": "ref_dk", "relation": "extends", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json", "source_location": "L4", "weight": 1.0, "context": "import"}, {"source": "brunata_to_home_assistant_hacs_country", "target": "ref_se", "relation": "extends", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json", "source_location": "L4", "weight": 1.0, "context": "import"}, {"source": "brunata_to_home_assistant_hacs_country", "target": "ref_no", "relation": "extends", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json", "source_location": "L4", "weight": 1.0, "context": "import"}, {"source": "brunata_to_home_assistant_hacs_country", "target": "ref_de", "relation": "extends", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json", "source_location": "L4", "weight": 1.0, "context": "import"}, {"source": "c_users_ithh_documents_github_brunata_to_home_assistant_hacs_json", "target": "brunata_to_home_assistant_hacs_homeassistant", "relation": "contains", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json", "source_location": "L5", "weight": 1.0}, {"source": "c_users_ithh_documents_github_brunata_to_home_assistant_hacs_json", "target": "brunata_to_home_assistant_hacs_render_readme", "relation": "contains", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json", "source_location": "L6", "weight": 1.0}]}
+{
+  "nodes": [
+    {
+      "id": "c_users_ithh_documents_github_brunata_to_home_assistant_hacs_json",
+      "label": "hacs.json",
+      "file_type": "code",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json",
+      "source_location": "L1"
+    },
+    {
+      "id": "brunata_to_home_assistant_hacs_name",
+      "label": "name",
+      "file_type": "code",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json",
+      "source_location": "L2"
+    },
+    {
+      "id": "brunata_to_home_assistant_hacs_content_in_root",
+      "label": "content_in_root",
+      "file_type": "code",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json",
+      "source_location": "L3"
+    },
+    {
+      "id": "brunata_to_home_assistant_hacs_country",
+      "label": "country",
+      "file_type": "code",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json",
+      "source_location": "L4"
+    },
+    {
+      "id": "brunata_to_home_assistant_hacs_homeassistant",
+      "label": "homeassistant",
+      "file_type": "code",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json",
+      "source_location": "L5"
+    },
+    {
+      "id": "brunata_to_home_assistant_hacs_render_readme",
+      "label": "render_readme",
+      "file_type": "code",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json",
+      "source_location": "L6"
+    }
+  ],
+  "edges": [
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_hacs_json",
+      "target": "brunata_to_home_assistant_hacs_name",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_hacs_json",
+      "target": "brunata_to_home_assistant_hacs_content_in_root",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_hacs_json",
+      "target": "brunata_to_home_assistant_hacs_country",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_to_home_assistant_hacs_country",
+      "target": "ref_dk",
+      "relation": "extends",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json",
+      "source_location": "L4",
+      "weight": 1.0,
+      "context": "import"
+    },
+    {
+      "source": "brunata_to_home_assistant_hacs_country",
+      "target": "ref_se",
+      "relation": "extends",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json",
+      "source_location": "L4",
+      "weight": 1.0,
+      "context": "import"
+    },
+    {
+      "source": "brunata_to_home_assistant_hacs_country",
+      "target": "ref_no",
+      "relation": "extends",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json",
+      "source_location": "L4",
+      "weight": 1.0,
+      "context": "import"
+    },
+    {
+      "source": "brunata_to_home_assistant_hacs_country",
+      "target": "ref_de",
+      "relation": "extends",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json",
+      "source_location": "L4",
+      "weight": 1.0,
+      "context": "import"
+    },
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_hacs_json",
+      "target": "brunata_to_home_assistant_hacs_homeassistant",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_hacs_json",
+      "target": "brunata_to_home_assistant_hacs_render_readme",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json",
+      "source_location": "L6",
+      "weight": 1.0
+    }
+  ]
+}

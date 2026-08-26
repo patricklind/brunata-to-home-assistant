@@ -1,1 +1,28 @@
-{"nodes": [{"id": "english_translation", "label": "English config-flow translation", "file_type": "document", "source_file": "custom_components/brunata_online/translations/en.json", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}], "edges": [{"source": "english_translation", "target": "config_flow", "relation": "localizes", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "custom_components/brunata_online/translations/en.json", "source_location": null, "weight": 1.0}], "hyperedges": []}
+{
+  "nodes": [
+    {
+      "id": "english_translation",
+      "label": "English config-flow translation",
+      "file_type": "document",
+      "source_file": "custom_components/brunata_online/translations/en.json",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "english_translation",
+      "target": "config_flow",
+      "relation": "localizes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "custom_components/brunata_online/translations/en.json",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

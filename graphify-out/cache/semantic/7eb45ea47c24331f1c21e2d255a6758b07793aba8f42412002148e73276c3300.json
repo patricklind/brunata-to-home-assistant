@@ -1,1 +1,60 @@
-{"nodes": [{"id": "brunata_online_integration", "label": "Brunata Online integration", "file_type": "document", "source_file": "custom_components/brunata_online/manifest.json", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}, {"id": "patricklind", "label": "@patricklind", "file_type": "document", "source_file": "custom_components/brunata_online/manifest.json", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}, {"id": "manifest_version", "label": "Integration manifest version", "file_type": "document", "source_file": "custom_components/brunata_online/manifest.json", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}], "edges": [{"source": "brunata_online_integration", "target": "patricklind", "relation": "owned_by", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "custom_components/brunata_online/manifest.json", "source_location": null, "weight": 1.0}, {"source": "brunata_online_integration", "target": "requests", "relation": "requires", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "custom_components/brunata_online/manifest.json", "source_location": null, "weight": 1.0}], "hyperedges": []}
+{
+  "nodes": [
+    {
+      "id": "brunata_online_integration",
+      "label": "Brunata Online integration",
+      "file_type": "document",
+      "source_file": "custom_components/brunata_online/manifest.json",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "patricklind",
+      "label": "@patricklind",
+      "file_type": "document",
+      "source_file": "custom_components/brunata_online/manifest.json",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "manifest_version",
+      "label": "Integration manifest version",
+      "file_type": "document",
+      "source_file": "custom_components/brunata_online/manifest.json",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "brunata_online_integration",
+      "target": "patricklind",
+      "relation": "owned_by",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "custom_components/brunata_online/manifest.json",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_integration",
+      "target": "requests",
+      "relation": "requires",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "custom_components/brunata_online/manifest.json",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

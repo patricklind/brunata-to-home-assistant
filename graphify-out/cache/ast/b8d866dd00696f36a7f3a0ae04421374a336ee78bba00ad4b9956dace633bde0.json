@@ -1,1 +1,560 @@
-{"nodes": [{"id": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py", "label": "__init__.py", "file_type": "code", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L1"}, {"id": "brunata_online_init_async_setup", "label": "async_setup()", "file_type": "code", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L25"}, {"id": "homeassistant", "label": "HomeAssistant", "file_type": "code", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L25"}, {"id": "str", "label": "str", "file_type": "code", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L25"}, {"id": "any", "label": "Any", "file_type": "code", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L25"}, {"id": "bool", "label": "bool", "file_type": "code", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L25"}, {"id": "brunata_online_init_async_setup_entry", "label": "async_setup_entry()", "file_type": "code", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L30"}, {"id": "brunataconfigentry", "label": "BrunataConfigEntry", "file_type": "code", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L30"}, {"id": "brunata_online_init_async_unload_entry", "label": "async_unload_entry()", "file_type": "code", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L55"}, {"id": "brunata_online_init_brunatadatacoordinator", "label": "BrunataDataCoordinator", "file_type": "code", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L63"}, {"id": "brunata_online_init_brunatadatacoordinator_init", "label": ".__init__()", "file_type": "code", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L66"}, {"id": "brunataonlineclient", "label": "BrunataOnlineClient", "file_type": "code", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L66"}, {"id": "brunata_online_init_brunatadatacoordinator_async_update_data", "label": "._async_update_data()", "file_type": "code", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L75"}, {"id": "brunata_online_init_rationale_1", "label": "Brunata Online integration for Home Assistant.", "file_type": "rationale", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L1"}, {"id": "brunata_online_init_rationale_26", "label": "Set up integration via YAML (not used).", "file_type": "rationale", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L26"}, {"id": "brunata_online_init_rationale_31", "label": "Set up Brunata from a config entry.", "file_type": "rationale", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L31"}, {"id": "brunata_online_init_rationale_56", "label": "Unload Brunata config entry.", "file_type": "rationale", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L56"}, {"id": "brunata_online_init_rationale_64", "label": "Coordinator for Brunata data updates.", "file_type": "rationale", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L64"}], "edges": [{"source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py", "target": "logging", "relation": "imports", "context": "import", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L5", "weight": 1.0}, {"source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py", "target": "typing", "relation": "imports_from", "context": "import", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L6", "weight": 1.0}, {"source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py", "target": "homeassistant_config_entries", "relation": "imports_from", "context": "import", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L8", "weight": 1.0}, {"source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py", "target": "homeassistant_core", "relation": "imports_from", "context": "import", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L9", "weight": 1.0}, {"source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py", "target": "homeassistant_helpers_aiohttp_client", "relation": "imports_from", "context": "import", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L10", "weight": 1.0}, {"source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py", "target": "homeassistant_helpers", "relation": "imports_from", "context": "import", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L11", "weight": 1.0}, {"source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py", "target": "homeassistant_helpers_update_coordinator", "relation": "imports_from", "context": "import", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L12", "weight": 1.0}, {"source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py", "target": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_api_py", "relation": "imports_from", "context": "import", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L14", "weight": 1.0}, {"source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py", "target": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_const_py", "relation": "imports_from", "context": "import", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L15", "weight": 1.0}, {"source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py", "target": "brunata_online_init_async_setup", "relation": "contains", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L25", "weight": 1.0}, {"source": "brunata_online_init_async_setup", "target": "homeassistant", "relation": "references", "context": "parameter_type", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L25", "weight": 1.0}, {"source": "brunata_online_init_async_setup", "target": "str", "relation": "references", "context": "generic_arg", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L25", "weight": 1.0}, {"source": "brunata_online_init_async_setup", "target": "any", "relation": "references", "context": "generic_arg", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L25", "weight": 1.0}, {"source": "brunata_online_init_async_setup", "target": "bool", "relation": "references", "context": "return_type", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L25", "weight": 1.0}, {"source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py", "target": "brunata_online_init_async_setup_entry", "relation": "contains", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L30", "weight": 1.0}, {"source": "brunata_online_init_async_setup_entry", "target": "homeassistant", "relation": "references", "context": "parameter_type", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L30", "weight": 1.0}, {"source": "brunata_online_init_async_setup_entry", "target": "brunataconfigentry", "relation": "references", "context": "parameter_type", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L30", "weight": 1.0}, {"source": "brunata_online_init_async_setup_entry", "target": "bool", "relation": "references", "context": "return_type", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L30", "weight": 1.0}, {"source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py", "target": "brunata_online_init_async_unload_entry", "relation": "contains", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L55", "weight": 1.0}, {"source": "brunata_online_init_async_unload_entry", "target": "homeassistant", "relation": "references", "context": "parameter_type", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L55", "weight": 1.0}, {"source": "brunata_online_init_async_unload_entry", "target": "brunataconfigentry", "relation": "references", "context": "parameter_type", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L55", "weight": 1.0}, {"source": "brunata_online_init_async_unload_entry", "target": "bool", "relation": "references", "context": "return_type", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L55", "weight": 1.0}, {"source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py", "target": "brunata_online_init_brunatadatacoordinator", "relation": "contains", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L63", "weight": 1.0}, {"source": "brunata_online_init_brunatadatacoordinator", "target": "brunata_online_init_brunatadatacoordinator_init", "relation": "method", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L66", "weight": 1.0}, {"source": "brunata_online_init_brunatadatacoordinator_init", "target": "homeassistant", "relation": "references", "context": "parameter_type", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L66", "weight": 1.0}, {"source": "brunata_online_init_brunatadatacoordinator_init", "target": "brunataonlineclient", "relation": "references", "context": "parameter_type", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L66", "weight": 1.0}, {"source": "brunata_online_init_brunatadatacoordinator", "target": "brunata_online_init_brunatadatacoordinator_async_update_data", "relation": "method", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L75", "weight": 1.0}, {"source": "brunata_online_init_brunatadatacoordinator_async_update_data", "target": "str", "relation": "references", "context": "generic_arg", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L75", "weight": 1.0}, {"source": "brunata_online_init_brunatadatacoordinator_async_update_data", "target": "any", "relation": "references", "context": "generic_arg", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L75", "weight": 1.0}, {"source": "brunata_online_init_async_setup_entry", "target": "brunataonlineclient", "relation": "calls", "context": "call", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L35", "weight": 1.0}, {"source": "brunata_online_init_async_setup_entry", "target": "brunata_online_init_brunatadatacoordinator", "relation": "calls", "context": "call", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L41", "weight": 1.0}, {"source": "brunata_online_init_rationale_1", "target": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py", "relation": "rationale_for", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L1", "weight": 1.0}, {"source": "brunata_online_init_rationale_26", "target": "brunata_online_init_async_setup", "relation": "rationale_for", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L26", "weight": 1.0}, {"source": "brunata_online_init_rationale_31", "target": "brunata_online_init_async_setup_entry", "relation": "rationale_for", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L31", "weight": 1.0}, {"source": "brunata_online_init_rationale_56", "target": "brunata_online_init_async_unload_entry", "relation": "rationale_for", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L56", "weight": 1.0}, {"source": "brunata_online_init_rationale_64", "target": "brunata_online_init_brunatadatacoordinator", "relation": "rationale_for", "confidence": "EXTRACTED", "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L64", "weight": 1.0}], "raw_calls": [{"caller_nid": "brunata_online_init_async_setup_entry", "callee": "setdefault", "is_member_call": true, "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L32"}, {"caller_nid": "brunata_online_init_async_setup_entry", "callee": "async_get_clientsession", "is_member_call": false, "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L34"}, {"caller_nid": "brunata_online_init_async_setup_entry", "callee": "async_refresh", "is_member_call": true, "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L42"}, {"caller_nid": "brunata_online_init_async_setup_entry", "callee": "warning", "is_member_call": true, "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L44"}, {"caller_nid": "brunata_online_init_async_setup_entry", "callee": "async_forward_entry_setups", "is_member_call": true, "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L51"}, {"caller_nid": "brunata_online_init_async_unload_entry", "callee": "async_unload_platforms", "is_member_call": true, "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L57"}, {"caller_nid": "brunata_online_init_async_unload_entry", "callee": "pop", "is_member_call": true, "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L59"}, {"caller_nid": "brunata_online_init_async_unload_entry", "callee": "get", "is_member_call": true, "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L59"}, {"caller_nid": "brunata_online_init_brunatadatacoordinator_async_update_data", "callee": "async_fetch_data", "is_member_call": true, "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L77"}, {"caller_nid": "brunata_online_init_brunatadatacoordinator_async_update_data", "callee": "UpdateFailed", "is_member_call": false, "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L79"}, {"caller_nid": "brunata_online_init_brunatadatacoordinator_async_update_data", "callee": "UpdateFailed", "is_member_call": false, "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py", "source_location": "L81"}]}
+{
+  "nodes": [
+    {
+      "id": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py",
+      "label": "__init__.py",
+      "file_type": "code",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "brunata_online_init_async_setup",
+      "label": "async_setup()",
+      "file_type": "code",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L25"
+    },
+    {
+      "id": "homeassistant",
+      "label": "HomeAssistant",
+      "file_type": "code",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L25"
+    },
+    {
+      "id": "str",
+      "label": "str",
+      "file_type": "code",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L25"
+    },
+    {
+      "id": "any",
+      "label": "Any",
+      "file_type": "code",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L25"
+    },
+    {
+      "id": "bool",
+      "label": "bool",
+      "file_type": "code",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L25"
+    },
+    {
+      "id": "brunata_online_init_async_setup_entry",
+      "label": "async_setup_entry()",
+      "file_type": "code",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L30"
+    },
+    {
+      "id": "brunataconfigentry",
+      "label": "BrunataConfigEntry",
+      "file_type": "code",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L30"
+    },
+    {
+      "id": "brunata_online_init_async_unload_entry",
+      "label": "async_unload_entry()",
+      "file_type": "code",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L55"
+    },
+    {
+      "id": "brunata_online_init_brunatadatacoordinator",
+      "label": "BrunataDataCoordinator",
+      "file_type": "code",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L63"
+    },
+    {
+      "id": "brunata_online_init_brunatadatacoordinator_init",
+      "label": ".__init__()",
+      "file_type": "code",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L66"
+    },
+    {
+      "id": "brunataonlineclient",
+      "label": "BrunataOnlineClient",
+      "file_type": "code",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L66"
+    },
+    {
+      "id": "brunata_online_init_brunatadatacoordinator_async_update_data",
+      "label": "._async_update_data()",
+      "file_type": "code",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L75"
+    },
+    {
+      "id": "brunata_online_init_rationale_1",
+      "label": "Brunata Online integration for Home Assistant.",
+      "file_type": "rationale",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "brunata_online_init_rationale_26",
+      "label": "Set up integration via YAML (not used).",
+      "file_type": "rationale",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L26"
+    },
+    {
+      "id": "brunata_online_init_rationale_31",
+      "label": "Set up Brunata from a config entry.",
+      "file_type": "rationale",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L31"
+    },
+    {
+      "id": "brunata_online_init_rationale_56",
+      "label": "Unload Brunata config entry.",
+      "file_type": "rationale",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L56"
+    },
+    {
+      "id": "brunata_online_init_rationale_64",
+      "label": "Coordinator for Brunata data updates.",
+      "file_type": "rationale",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L64"
+    }
+  ],
+  "edges": [
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py",
+      "target": "logging",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py",
+      "target": "typing",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py",
+      "target": "homeassistant_config_entries",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py",
+      "target": "homeassistant_core",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py",
+      "target": "homeassistant_helpers_aiohttp_client",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py",
+      "target": "homeassistant_helpers",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py",
+      "target": "homeassistant_helpers_update_coordinator",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py",
+      "target": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_api_py",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L14",
+      "weight": 1.0
+    },
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py",
+      "target": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_const_py",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py",
+      "target": "brunata_online_init_async_setup",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L25",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_async_setup",
+      "target": "homeassistant",
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L25",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_async_setup",
+      "target": "str",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L25",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_async_setup",
+      "target": "any",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L25",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_async_setup",
+      "target": "bool",
+      "relation": "references",
+      "context": "return_type",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L25",
+      "weight": 1.0
+    },
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py",
+      "target": "brunata_online_init_async_setup_entry",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L30",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_async_setup_entry",
+      "target": "homeassistant",
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L30",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_async_setup_entry",
+      "target": "brunataconfigentry",
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L30",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_async_setup_entry",
+      "target": "bool",
+      "relation": "references",
+      "context": "return_type",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L30",
+      "weight": 1.0
+    },
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py",
+      "target": "brunata_online_init_async_unload_entry",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L55",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_async_unload_entry",
+      "target": "homeassistant",
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L55",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_async_unload_entry",
+      "target": "brunataconfigentry",
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L55",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_async_unload_entry",
+      "target": "bool",
+      "relation": "references",
+      "context": "return_type",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L55",
+      "weight": 1.0
+    },
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py",
+      "target": "brunata_online_init_brunatadatacoordinator",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L63",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_brunatadatacoordinator",
+      "target": "brunata_online_init_brunatadatacoordinator_init",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L66",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_brunatadatacoordinator_init",
+      "target": "homeassistant",
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L66",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_brunatadatacoordinator_init",
+      "target": "brunataonlineclient",
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L66",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_brunatadatacoordinator",
+      "target": "brunata_online_init_brunatadatacoordinator_async_update_data",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L75",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_brunatadatacoordinator_async_update_data",
+      "target": "str",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L75",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_brunatadatacoordinator_async_update_data",
+      "target": "any",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L75",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_async_setup_entry",
+      "target": "brunataonlineclient",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L35",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_async_setup_entry",
+      "target": "brunata_online_init_brunatadatacoordinator",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L41",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_rationale_1",
+      "target": "c_users_ithh_documents_github_brunata_to_home_assistant_custom_components_brunata_online_init_py",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_rationale_26",
+      "target": "brunata_online_init_async_setup",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L26",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_rationale_31",
+      "target": "brunata_online_init_async_setup_entry",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L31",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_rationale_56",
+      "target": "brunata_online_init_async_unload_entry",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L56",
+      "weight": 1.0
+    },
+    {
+      "source": "brunata_online_init_rationale_64",
+      "target": "brunata_online_init_brunatadatacoordinator",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L64",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "brunata_online_init_async_setup_entry",
+      "callee": "setdefault",
+      "is_member_call": true,
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L32"
+    },
+    {
+      "caller_nid": "brunata_online_init_async_setup_entry",
+      "callee": "async_get_clientsession",
+      "is_member_call": false,
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L34"
+    },
+    {
+      "caller_nid": "brunata_online_init_async_setup_entry",
+      "callee": "async_refresh",
+      "is_member_call": true,
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L42"
+    },
+    {
+      "caller_nid": "brunata_online_init_async_setup_entry",
+      "callee": "warning",
+      "is_member_call": true,
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L44"
+    },
+    {
+      "caller_nid": "brunata_online_init_async_setup_entry",
+      "callee": "async_forward_entry_setups",
+      "is_member_call": true,
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L51"
+    },
+    {
+      "caller_nid": "brunata_online_init_async_unload_entry",
+      "callee": "async_unload_platforms",
+      "is_member_call": true,
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L57"
+    },
+    {
+      "caller_nid": "brunata_online_init_async_unload_entry",
+      "callee": "pop",
+      "is_member_call": true,
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L59"
+    },
+    {
+      "caller_nid": "brunata_online_init_async_unload_entry",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L59"
+    },
+    {
+      "caller_nid": "brunata_online_init_brunatadatacoordinator_async_update_data",
+      "callee": "async_fetch_data",
+      "is_member_call": true,
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L77"
+    },
+    {
+      "caller_nid": "brunata_online_init_brunatadatacoordinator_async_update_data",
+      "callee": "UpdateFailed",
+      "is_member_call": false,
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L79"
+    },
+    {
+      "caller_nid": "brunata_online_init_brunatadatacoordinator_async_update_data",
+      "callee": "UpdateFailed",
+      "is_member_call": false,
+      "source_file": "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py",
+      "source_location": "L81"
+    }
+  ]
+}

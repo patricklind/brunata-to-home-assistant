@@ -1,1 +1,28 @@
-{"nodes": [{"id": "feature_request_template", "label": "Feature request template", "file_type": "document", "source_file": ".github/ISSUE_TEMPLATE/feature_request.md", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}], "edges": [{"source": "feature_request_template", "target": "brunata_online_integration", "relation": "collects_feature_requests_for", "confidence": "INFERRED", "confidence_score": 0.9, "source_file": ".github/ISSUE_TEMPLATE/feature_request.md", "source_location": null, "weight": 1.0}], "hyperedges": []}
+{
+  "nodes": [
+    {
+      "id": "feature_request_template",
+      "label": "Feature request template",
+      "file_type": "document",
+      "source_file": ".github/ISSUE_TEMPLATE/feature_request.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "feature_request_template",
+      "target": "brunata_online_integration",
+      "relation": "collects_feature_requests_for",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": ".github/ISSUE_TEMPLATE/feature_request.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}
