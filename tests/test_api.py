@@ -72,6 +72,27 @@ class CredentialPostUrlTests(unittest.TestCase):
                 api._validate_credential_post_url(url)
 
 
+class AuthorizationRedirectTests(unittest.TestCase):
+    """Ensure authorization codes are accepted only from the initiated flow."""
+
+    def test_accepts_expected_redirect_and_state(self) -> None:
+        parsed = api.urllib.parse.urlparse(
+            f"{api.REDIRECT_URI}?code=authorization-code&state=expected"
+        )
+        api._validate_auth_redirect(parsed, "expected")
+
+    def test_rejects_wrong_target_or_state(self) -> None:
+        unsafe_urls = (
+            f"{api.REDIRECT_URI}?code=value&state=wrong",
+            "https://evil.example/callback?code=value&state=expected",
+            "https://online.brunata.com/other?code=value&state=expected",
+            "http://online.brunata.com/mybrunata/auth-redirect?state=expected",
+        )
+        for url in unsafe_urls:
+            with self.subTest(url=url), self.assertRaises(api.BrunataAuthError):
+                api._validate_auth_redirect(api.urllib.parse.urlparse(url), "expected")
+
+
 class HistoryCacheTests(unittest.IsolatedAsyncioTestCase):
     """Verify partial history refreshes do not erase valid cached totals."""
 
@@ -109,6 +130,7 @@ class HistoryCacheTests(unittest.IsolatedAsyncioTestCase):
         history, metadata = await client._get_meter_history_30d([row])
 
         self.assertGreater(metadata["failed_days"], 0)
+        self.assertIsNone(client._history_updated_at)
         self.assertEqual(
             [point["date"] for point in history[meter_key]],
             [cached_day, today.isoformat()],
@@ -196,6 +218,11 @@ class HistoryFallbackTests(unittest.TestCase):
 
     def test_boolean_is_not_a_valid_meter_value(self) -> None:
         self.assertIsNone(api._to_float(True))
+
+    def test_non_finite_numbers_are_not_valid_meter_values(self) -> None:
+        for value in (float("nan"), float("inf"), "-inf"):
+            with self.subTest(value=value):
+                self.assertIsNone(api._to_float(value))
 
 
 if __name__ == "__main__":

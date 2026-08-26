@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
+import math
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -111,10 +112,10 @@ def _heating_format(medium: str, native_unit: str | None) -> str | None:
 
 def _normalize_reading_value(value: Any) -> float | int | None:
     """Normalize Brunata reading values to numeric values for statistics."""
-    if value is None:
+    if value is None or isinstance(value, bool):
         return None
     if isinstance(value, (int, float)):
-        return value
+        return value if math.isfinite(value) else None
     if isinstance(value, str):
         text = value.strip().replace(" ", "")
         if not text:
@@ -128,7 +129,8 @@ def _normalize_reading_value(value: Any) -> float | int | None:
             # Brunata may return decimal-comma values for water readings.
             text = text.replace(",", ".")
         try:
-            return float(text)
+            number = float(text)
+            return number if math.isfinite(number) else None
         except ValueError:
             return None
     return None

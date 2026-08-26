@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 import hashlib
 import html
+import math
 import re
 import secrets
 import time
@@ -348,7 +349,11 @@ class BrunataOnlineClient:
             history.setdefault(meter_key, [])
 
         self._history_cache = history
-        self._history_updated_at = now_utc
+        # A partial result is useful, but must not be considered fresh for 12
+        # hours. Keep the previous timestamp so the next coordinator update can
+        # promptly retry failed days.
+        if failed_days == 0:
+            self._history_updated_at = now_utc
 
         return history, {
             "days_back": HISTORY_DAYS_BACK,
@@ -482,6 +487,7 @@ class BrunataOnlineClient:
                 # Match the browser app; Brunata uses a long hex PKCE verifier.
                 code_verifier = secrets.token_hex(48)
                 code_challenge = _pkce_s256_challenge(code_verifier)
+                oauth_state = secrets.token_urlsafe(32)
 
                 with requests.Session() as session:
                     session.headers.update(DEFAULT_HEADERS)
@@ -494,6 +500,7 @@ class BrunataOnlineClient:
                         "redirect_uri": REDIRECT_URI,
                         "scope": OAUTH_SCOPE,
                         "response_type": "code",
+                        "state": oauth_state,
                         "code_challenge": code_challenge,
                         "code_challenge_method": "S256",
                     }
@@ -538,6 +545,7 @@ class BrunataOnlineClient:
 
                     redirect_location = login.headers.get("Location", "")
                     parsed = urllib.parse.urlparse(redirect_location)
+                    _validate_auth_redirect(parsed, oauth_state)
                     code = (urllib.parse.parse_qs(parsed.query).get("code") or [None])[
                         0
                     ]
@@ -568,7 +576,7 @@ class BrunataOnlineClient:
                         return resp.json()
 
                     raise BrunataAuthError(
-                        f"Token exchange failed ({resp.status_code}: {resp.text[:300]})"
+                        f"Token exchange failed (HTTP {resp.status_code})"
                     )
             except BrunataAuthError:
                 raise
@@ -714,7 +722,8 @@ def _to_float(value: Any) -> float | None:
     if value is None or isinstance(value, bool):
         return None
     if isinstance(value, (int, float)):
-        return float(value)
+        number = float(value)
+        return number if math.isfinite(number) else None
     if isinstance(value, str):
         text = value.strip().replace(" ", "")
         if not text:
@@ -727,7 +736,8 @@ def _to_float(value: Any) -> float | None:
         elif "," in text:
             text = text.replace(",", ".")
         try:
-            return float(text)
+            number = float(text)
+            return number if math.isfinite(number) else None
         except ValueError:
             return None
     return None
@@ -749,6 +759,27 @@ def _to_date(value: Any) -> date | None:
 def _pkce_s256_challenge(code_verifier: str) -> str:
     digest = hashlib.sha256(code_verifier.encode("ascii")).digest()
     return base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
+
+
+def _validate_auth_redirect(
+    parsed: urllib.parse.ParseResult, expected_state: str
+) -> None:
+    """Validate the OAuth redirect target and anti-forgery state value."""
+    expected = urllib.parse.urlparse(REDIRECT_URI)
+    try:
+        port = parsed.port
+    except ValueError as err:
+        raise BrunataAuthError("Keycloak returned an invalid redirect") from err
+    query = urllib.parse.parse_qs(parsed.query)
+    returned_state = (query.get("state") or [None])[0]
+    if (
+        parsed.scheme != expected.scheme
+        or parsed.hostname != expected.hostname
+        or port not in {None, 443}
+        or parsed.path != expected.path
+        or not secrets.compare_digest(str(returned_state or ""), expected_state)
+    ):
+        raise BrunataAuthError("Keycloak returned an invalid redirect")
 
 
 def _extract_login_form_action(page_html: str) -> str:

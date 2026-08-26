@@ -157,10 +157,41 @@ Environment variables (from `.env`):
 - `BRUNATA_USERNAME`
 - `BRUNATA_PASSWORD`
 
+Copy `.env.example` to `.env` and replace the placeholders. The ignored `.env`
+file and generated `output/` directory can contain credentials or personal meter
+data and must not be committed or shared.
+
 Output files:
 
 - `output/brunata_data.json`
 - `output/brunata_meters.csv`
+
+## Development and verification
+
+The integration has no database, server process, or standalone web UI. Home
+Assistant supplies the async HTTP session, scheduling, entity registry, storage,
+and UI. The only direct runtime dependency in this repository is for the optional
+diagnostic script; Home Assistant installs the integration requirement declared
+in `manifest.json`.
+
+Use Python 3.12 or newer (matching current supported Home Assistant releases):
+
+```bash
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -v
+python -m compileall -q custom_components fetch_brunata_data.py tests
+```
+
+Maintainer checks mirror CI:
+
+```bash
+python -m pip install pre-commit black flake8
+pre-commit run --config .github/pre-commit.yml --all-files
+```
+
+Live authentication and meter retrieval require a real Brunata account and
+outbound access to `https://online.brunata.com`; unit tests do not make network
+requests.
 
 ---
 

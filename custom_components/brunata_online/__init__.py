@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigEntryAuthFailed
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers import config_validation as cv
@@ -39,12 +39,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: BrunataConfigEntry) -> b
     )
 
     coordinator = BrunataDataCoordinator(hass, client)
-    await coordinator.async_refresh()
-    if not coordinator.last_update_success:
-        _LOGGER.warning(
-            "Initial Brunata refresh failed during setup; integration will retry in "
-            "background."
-        )
+    # Let Home Assistant distinguish temporary startup failures (which are
+    # retried as ConfigEntryNotReady) from invalid credentials. Continuing with
+    # an empty coordinator makes setup appear successful while exposing no
+    # entities and prevents Home Assistant's normal repair flow from running.
+    await coordinator.async_config_entry_first_refresh()
 
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
@@ -76,6 +75,8 @@ class BrunataDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         try:
             return await self.client.async_fetch_data()
         except BrunataAuthError as err:
-            raise UpdateFailed(f"Authentication failed: {err}") from err
+            raise ConfigEntryAuthFailed(
+                "Brunata credentials are no longer valid"
+            ) from err
         except Exception as err:  # pylint: disable=broad-except
             raise UpdateFailed(f"Failed to update Brunata data: {err}") from err

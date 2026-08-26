@@ -94,6 +94,27 @@ def _validate_credential_post_url(url: str) -> None:
         raise BrunataAuthError("Keycloak returned an unsafe credential form URL")
 
 
+def _validate_auth_redirect(
+    parsed: urllib.parse.ParseResult, expected_state: str
+) -> None:
+    """Validate the OAuth redirect target and anti-forgery state value."""
+    expected = urllib.parse.urlparse(REDIRECT_URI)
+    try:
+        port = parsed.port
+    except ValueError as err:
+        raise BrunataAuthError("Keycloak returned an invalid redirect") from err
+    query = urllib.parse.parse_qs(parsed.query)
+    returned_state = (query.get("state") or [None])[0]
+    if (
+        parsed.scheme != expected.scheme
+        or parsed.hostname != expected.hostname
+        or port not in {None, 443}
+        or parsed.path != expected.path
+        or not secrets.compare_digest(str(returned_state or ""), expected_state)
+    ):
+        raise BrunataAuthError("Keycloak returned an invalid redirect")
+
+
 def _extract_keycloak_error_text(page_html: str) -> str | None:
     """Extract the inline error from a re-rendered Keycloak login page."""
     patterns = (
@@ -126,6 +147,7 @@ def authenticate(username: str, password: str) -> tuple[requests.Session, TokenD
 
     code_verifier = secrets.token_hex(48)
     code_challenge = _pkce_s256_challenge(code_verifier)
+    oauth_state = secrets.token_urlsafe(32)
 
     # 1. Load the Keycloak login page (sets AUTH_SESSION_ID / KC_RESTART cookies).
     login_page = session.get(
@@ -135,6 +157,7 @@ def authenticate(username: str, password: str) -> tuple[requests.Session, TokenD
             "redirect_uri": REDIRECT_URI,
             "scope": OAUTH_SCOPE,
             "response_type": "code",
+            "state": oauth_state,
             "code_challenge": code_challenge,
             "code_challenge_method": "S256",
         },
@@ -162,6 +185,7 @@ def authenticate(username: str, password: str) -> tuple[requests.Session, TokenD
 
     redirect_location = login.headers.get("Location", "")
     parsed = urllib.parse.urlparse(redirect_location)
+    _validate_auth_redirect(parsed, oauth_state)
     code = (urllib.parse.parse_qs(parsed.query).get("code") or [None])[0]
     if not code:
         raise BrunataAuthError("Authorization code missing in redirect")
@@ -186,9 +210,7 @@ def authenticate(username: str, password: str) -> tuple[requests.Session, TokenD
         timeout=REQUEST_TIMEOUT,
     )
     if resp.status_code >= 400:
-        raise BrunataAuthError(
-            f"Token exchange failed ({resp.status_code}: {resp.text[:300]})"
-        )
+        raise BrunataAuthError(f"Token exchange failed (HTTP {resp.status_code})")
 
     tokens = resp.json()
     access_token = tokens.get("access_token")
