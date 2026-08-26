@@ -152,6 +152,69 @@ class HistoryCacheTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(history[meter_key][0]["value"], 84.25)
 
 
+class CurrentMeterSelectionTests(unittest.IsolatedAsyncioTestCase):
+    """Verify current values are selected independently for each meter."""
+
+    async def test_uses_newest_valid_reading_per_meter(self) -> None:
+        client = api.BrunataOnlineClient("user", "password", None)
+        client._build_date_candidates = lambda: ["2026-07-01", "2026-08-01"]
+
+        cold_meter = {"meterId": "cold", "allocationUnit": "K"}
+        hot_meter = {"meterId": "hot", "allocationUnit": "W"}
+        responses = {
+            "2026-07-01": [
+                {
+                    "meter": cold_meter,
+                    "reading": {"value": 100, "readingDate": "2026-07-01"},
+                },
+                {
+                    "meter": hot_meter,
+                    "reading": {"value": 20, "readingDate": "2026-07-01"},
+                },
+            ],
+            "2026-08-01": [
+                {
+                    "meter": cold_meter,
+                    "reading": {"value": 110, "readingDate": "2026-08-01"},
+                },
+                {
+                    "meter": hot_meter,
+                    "reading": {"value": 25, "readingDate": "2026-08-15"},
+                },
+            ],
+        }
+
+        async def fake_get_json(path, params=None, **kwargs):
+            return responses[str(params["startdate"])]
+
+        client._api_get_json = fake_get_json
+        best_date, rows, _attempts = await client._get_best_meter_rows()
+        values = {row["meter"]["meterId"]: row["reading"]["value"] for row in rows}
+
+        self.assertEqual(best_date, "2026-08-01")
+        self.assertEqual(values, {"cold": 110, "hot": 25})
+
+    async def test_newer_empty_reading_does_not_replace_valid_value(self) -> None:
+        client = api.BrunataOnlineClient("user", "password", None)
+        client._build_date_candidates = lambda: ["2026-07-01", "2026-08-01"]
+        meter = {"meterId": "cold", "allocationUnit": "K"}
+
+        async def fake_get_json(path, params=None, **kwargs):
+            if params["startdate"] == "2026-07-01":
+                return [
+                    {
+                        "meter": meter,
+                        "reading": {"value": 100, "readingDate": "2026-07-01"},
+                    }
+                ]
+            return [{"meter": meter, "reading": {"value": None}}]
+
+        client._api_get_json = fake_get_json
+        _best_date, rows, _attempts = await client._get_best_meter_rows()
+
+        self.assertEqual(rows[0]["reading"]["value"], 100)
+
+
 class HistoryFallbackTests(unittest.TestCase):
     """Verify API payload normalization for replaced transmitters."""
 

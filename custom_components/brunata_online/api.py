@@ -162,8 +162,7 @@ class BrunataOnlineClient:
         ]
 
         best_date: str | None = None
-        best_rows: list[dict[str, Any]] = []
-        best_score = (-1, -1, -1)
+        best_rows_by_meter: dict[str, tuple[tuple[int, str, str], dict[str, Any]]] = {}
 
         for startdate in candidates:
             try:
@@ -195,11 +194,33 @@ class BrunataOnlineClient:
                     }
                 )
 
-                score = (non_null, row_count, startdate)
-                if score > best_score:
-                    best_score = score
-                    best_date = startdate
-                    best_rows = rows
+                # Brunata returns the first reading on/after ``startdate``.
+                # Different meter types report on different schedules, so a
+                # single response date can contain a fresh hot-water value but
+                # an older (or empty) cold-water value. Select the newest usable
+                # row independently for every meter instead of choosing one
+                # whole response for all meters.
+                best_date = max(best_date or startdate, startdate)
+                for row in rows:
+                    if not isinstance(row, dict):
+                        continue
+                    meter_key = self._meter_history_key(row)
+                    if not meter_key:
+                        continue
+                    reading = row.get("reading")
+                    value_is_valid = int(
+                        isinstance(reading, dict)
+                        and _to_float(reading.get("value")) is not None
+                    )
+                    reading_date = (
+                        str(reading.get("readingDate") or "")
+                        if isinstance(reading, dict)
+                        else ""
+                    )
+                    score = (value_is_valid, reading_date, startdate)
+                    existing = best_rows_by_meter.get(meter_key)
+                    if existing is None or score > existing[0]:
+                        best_rows_by_meter[meter_key] = (score, row)
             except Exception as err:  # pylint: disable=broad-except
                 attempts.append(
                     {
@@ -212,6 +233,7 @@ class BrunataOnlineClient:
         if best_date:
             self._best_startdate = best_date
 
+        best_rows = [item[1] for item in best_rows_by_meter.values()]
         return best_date, best_rows, attempts
 
     async def _get_meter_history_30d(
