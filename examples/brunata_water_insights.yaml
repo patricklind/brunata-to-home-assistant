@@ -1,0 +1,100 @@
+# Optional Home Assistant package for Brunata consumption insights.
+# Set brunata_daily_water_limit to 0 to disable the alert.
+
+input_number:
+  brunata_daily_water_limit:
+    name: Brunata daily water limit
+    icon: mdi:water-alert
+    min: 0
+    max: 10
+    step: 0.01
+    initial: 0
+    unit_of_measurement: "m³"
+    mode: box
+
+utility_meter:
+  brunata_daily_water:
+    name: Brunata daily water
+    source: sensor.brunata_water_total
+    cycle: daily
+  brunata_monthly_water:
+    name: Brunata monthly water
+    source: sensor.brunata_water_total
+    cycle: monthly
+  brunata_daily_cold_water:
+    name: Brunata daily cold water
+    source: sensor.brunata_cold_water_total
+    cycle: daily
+  brunata_monthly_cold_water:
+    name: Brunata monthly cold water
+    source: sensor.brunata_cold_water_total
+    cycle: monthly
+  brunata_daily_hot_water:
+    name: Brunata daily hot water
+    source: sensor.brunata_hot_water_total
+    cycle: daily
+  brunata_monthly_hot_water:
+    name: Brunata monthly hot water
+    source: sensor.brunata_hot_water_total
+    cycle: monthly
+
+template:
+  - sensor:
+      - name: Brunata hot water share today
+        unique_id: brunata_hot_water_share_today
+        icon: mdi:water-percent
+        unit_of_measurement: "%"
+        state_class: measurement
+        availability: >-
+          {{ is_number(states('sensor.brunata_daily_hot_water')) and
+             is_number(states('sensor.brunata_daily_cold_water')) }}
+        state: >-
+          {% set hot = states('sensor.brunata_daily_hot_water') | float(0) %}
+          {% set cold = states('sensor.brunata_daily_cold_water') | float(0) %}
+          {{ (100 * hot / (hot + cold)) | round(1) if hot + cold > 0 else 0 }}
+
+      - name: Brunata hot water share this month
+        unique_id: brunata_hot_water_share_this_month
+        icon: mdi:water-percent
+        unit_of_measurement: "%"
+        state_class: measurement
+        availability: >-
+          {{ is_number(states('sensor.brunata_monthly_hot_water')) and
+             is_number(states('sensor.brunata_monthly_cold_water')) }}
+        state: >-
+          {% set hot = states('sensor.brunata_monthly_hot_water') | float(0) %}
+          {% set cold = states('sensor.brunata_monthly_cold_water') | float(0) %}
+          {{ (100 * hot / (hot + cold)) | round(1) if hot + cold > 0 else 0 }}
+
+  - binary_sensor:
+      - name: Brunata daily water limit exceeded
+        unique_id: brunata_daily_water_limit_exceeded
+        icon: mdi:water-alert
+        device_class: problem
+        availability: >-
+          {{ is_number(states('sensor.brunata_daily_water')) and
+             is_number(states('input_number.brunata_daily_water_limit')) }}
+        state: >-
+          {% set usage = states('sensor.brunata_daily_water') | float(0) %}
+          {% set limit = states('input_number.brunata_daily_water_limit') | float(0) %}
+          {{ limit > 0 and usage > limit }}
+
+automation:
+  - id: brunata_daily_water_limit_notification
+    alias: Brunata daily water limit notification
+    description: Notify once the configured daily water limit is exceeded.
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.brunata_daily_water_limit_exceeded
+        to: "on"
+    conditions: []
+    actions:
+      - action: persistent_notification.create
+        data:
+          notification_id: brunata_daily_water_limit
+          title: Daily water limit exceeded
+          message: >-
+            Brunata reports {{ states('sensor.brunata_daily_water') }} m³ today.
+            The configured limit is
+            {{ states('input_number.brunata_daily_water_limit') }} m³.

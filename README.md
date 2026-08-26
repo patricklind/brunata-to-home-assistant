@@ -190,6 +190,41 @@ Output files:
 
 ---
 
+## Optional Water Insights Package
+
+[`examples/brunata_water_insights.yaml`](examples/brunata_water_insights.yaml)
+adds useful Home Assistant helpers without changing the integration's read-only
+behavior:
+
+- daily and monthly total, cold-water, and hot-water utility meters;
+- today's and this month's hot-water share;
+- an adjustable daily water limit;
+- a persistent notification when that limit is exceeded.
+
+To use it:
+
+1. Enable packages in `configuration.yaml`:
+
+   ```yaml
+   homeassistant:
+     packages: !include_dir_named packages
+   ```
+
+2. Copy the example to
+   `/config/packages/brunata_water_insights.yaml`.
+3. Restart Home Assistant.
+4. Set **Brunata daily water limit** under
+   `Settings -> Devices & services -> Helpers`. A value of `0` disables alerts.
+
+The package expects the integration's default aggregate entity IDs. If you have
+renamed those entities, update the three `source:` values in the package first.
+
+The first daily/monthly Utility Meter cycle is partial. Use the official
+`..._total` sensors as Utility Meter sources; do not use the distributed
+estimate or rolling `last N days` sensors for billing/statistics.
+
+---
+
 ## Maintainer: Tag + Release
 
 1. Bump version in:

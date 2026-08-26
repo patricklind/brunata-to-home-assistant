@@ -2,20 +2,20 @@
 
 ## Corpus Check
 
-- Corpus is ~9,573 words - fits in a single context window. You may not need a graph.
+- Corpus is ~10,777 words - fits in a single context window. You may not need a graph.
 
 ## Summary
 
-- 286 nodes · 654 edges · 19 communities (15 shown, 4 thin omitted)
-- Extraction: 90% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 67 edges (avg confidence: 0.53)
+- 323 nodes · 702 edges · 19 communities (15 shown, 4 thin omitted)
+- Extraction: 90% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 69 edges (avg confidence: 0.53)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
 
-- [[_COMMUNITY_Meter Entity State|Meter Entity State]]
-- [[_COMMUNITY_Aggregate Water Sensors|Aggregate Water Sensors]]
-- [[_COMMUNITY_Authentication and Config Flow|Authentication and Config Flow]]
 - [[_COMMUNITY_Async Brunata API Client|Async Brunata API Client]]
+- [[_COMMUNITY_Meter Entity State|Meter Entity State]]
+- [[_COMMUNITY_Water Insights Package|Water Insights Package]]
+- [[_COMMUNITY_Aggregate Water Sensors|Aggregate Water Sensors]]
 - [[_COMMUNITY_Project Documentation and CI|Project Documentation and CI]]
 - [[_COMMUNITY_API Regression Tests|API Regression Tests]]
 - [[_COMMUNITY_Standalone Debug Client|Standalone Debug Client]]
@@ -46,16 +46,16 @@
 
 ## Surprising Connections (you probably didn't know these)
 
-- `Feature request template` --collects_feature_requests_for--> `Brunata Online integration` [INFERRED]
-  .github/ISSUE_TEMPLATE/feature_request.md → custom_components/brunata_online/manifest.json
-- `Issue report template` --collects_bug_reports_for--> `Brunata Online integration` [INFERRED]
-  .github/ISSUE_TEMPLATE/issue.md → custom_components/brunata_online/manifest.json
+- `Brunata Online integration` --collects_feature_requests_for--> `Feature request template` [INFERRED]
+  custom_components/brunata_online/manifest.json → .github/ISSUE_TEMPLATE/feature_request.md
+- `Brunata Online integration` --collects_bug_reports_for--> `Issue report template` [INFERRED]
+  custom_components/brunata_online/manifest.json → .github/ISSUE_TEMPLATE/issue.md
 - `Brunata Online integration` --extends--> `Home Assistant` [EXTRACTED]
   custom_components/brunata_online/manifest.json → README.md
 - `Brunata Online integration` --creates--> `Per-meter sensors` [EXTRACTED]
   custom_components/brunata_online/manifest.json → README.md
-- `HACS validation` --validates--> `Brunata Online integration` [EXTRACTED]
-  .github/workflows/tests.yaml → custom_components/brunata_online/manifest.json
+- `Brunata Online integration` --validates--> `HACS validation` [EXTRACTED]
+  custom_components/brunata_online/manifest.json → .github/workflows/tests.yaml
 
 ## Import Cycles
 
@@ -66,25 +66,25 @@
 
 ## Communities (19 total, 4 thin omitted)
 
-### Community 0 - "Meter Entity State"
+### Community 0 - "Async Brunata API Client"
+
+Cohesion: 0.10
+Nodes (33): BrunataAuthError, BrunataConnectionError, BrunataOnlineClient, \_extract_keycloak_error_text(), \_extract_login_form_action(), \_pkce_s256_challenge(), \_to_date(), \_to_float() (+25 more)
+
+### Community 1 - "Meter Entity State"
+
+Cohesion: 0.13
+Nodes (32): \_all_meter_rows(), BrunataDistributedMeterSensor, \_consumption_windows_for_row(), \_current_or_history_value(), \_extract_official_point(), \_heating_format(), \_history_delta(), \_history_key_from_row_key() (+24 more)
+
+### Community 2 - "Water Insights Package"
+
+Cohesion: 0.07
+Nodes (37): Brunata Daily Cold Water, Brunata Daily Hot Water, Brunata Daily Water Limit, Brunata Daily Water, Brunata Hot Water Share This Month, Brunata Hot Water Share Today, Brunata Daily Water Limit Exceeded, Brunata Monthly Cold Water (+29 more)
+
+### Community 3 - "Aggregate Water Sensors"
 
 Cohesion: 0.14
-Nodes (30): \_all_meter_rows(), BrunataDistributedMeterSensor, \_consumption_windows_for_row(), \_current_or_history_value(), \_extract_official_point(), \_heating_format(), \_history_delta(), \_history_key_from_row_key() (+22 more)
-
-### Community 1 - "Aggregate Water Sensors"
-
-Cohesion: 0.12
-Nodes (19): AddEntitiesCallback, async_setup_entry(), \_BrunataAggregateWaterBase, BrunataAggregateWaterLastDaysSensor, BrunataAggregateWaterTotalSensor, BrunataLastDaysConsumptionSensor, BrunataMeterSensor, \_is_heating_medium() (+11 more)
-
-### Community 2 - "Authentication and Config Flow"
-
-Cohesion: 0.14
-Nodes (20): BrunataAuthError, BrunataConnectionError, \_extract_keycloak_error_text(), \_extract_login_form_action(), \_pkce_s256_challenge(), \_validate_credential_post_url(), BrunataOnlineConfigFlow, BrunataOptionsFlow (+12 more)
-
-### Community 3 - "Async Brunata API Client"
-
-Cohesion: 0.19
-Nodes (13): BrunataOnlineClient, \_to_date(), \_to_float(), \_to_int(), \_TokenState, ClientSession, ClientTimeout, Any (+5 more)
+Nodes (17): AddEntitiesCallback, async_setup_entry(), \_BrunataAggregateWaterBase, BrunataAggregateWaterLastDaysSensor, BrunataAggregateWaterTotalSensor, BrunataLastDaysConsumptionSensor, BrunataMeterSensor, \_is_heating_medium() (+9 more)
 
 ### Community 4 - "Project Documentation and CI"
 
@@ -138,7 +138,7 @@ Nodes (3): GitHub Release, Integration manifest version, Release from tag workfl
 
 ## Knowledge Gaps
 
-- **61 isolated node(s):** `name`, `content_in_root`, `country`, `homeassistant`, `render_readme` (+56 more)
+- **71 isolated node(s):** `name`, `content_in_root`, `country`, `homeassistant`, `render_readme` (+66 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **4 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -146,17 +146,17 @@ Nodes (3): GitHub Release, Integration manifest version, Release from tag workfl
 
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `datetime` connect `Meter Entity State` to `Aggregate Water Sensors`, `Authentication and Config Flow`, `API Regression Tests`, `Standalone Debug Client`?**
-  _High betweenness centrality (0.230) - this node is a cross-community bridge._
-- **Why does `requests` connect `Project Documentation and CI` to `Authentication and Config Flow`, `Standalone Debug Client`?**
-  _High betweenness centrality (0.141) - this node is a cross-community bridge._
+- **Why does `datetime` connect `Meter Entity State` to `Async Brunata API Client`, `Aggregate Water Sensors`, `API Regression Tests`, `Standalone Debug Client`?**
+  _High betweenness centrality (0.180) - this node is a cross-community bridge._
+- **Why does `requests` connect `Project Documentation and CI` to `Async Brunata API Client`, `Standalone Debug Client`?**
+  _High betweenness centrality (0.110) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `str` (e.g. with `SensorDeviceClass` and `SensorStateClass`) actually correct?**
   _`str` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 10 inferred relationships involving `BrunataOnlineClient` (e.g. with `BrunataOnlineConfigFlow` and `BrunataOptionsFlow`) actually correct?**
   _`BrunataOnlineClient` has 10 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 2 inferred relationships involving `Any` (e.g. with `SensorDeviceClass` and `SensorStateClass`) actually correct?**
   _`Any` has 2 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 20 inferred relationships involving `SensorDeviceClass` (e.g. with `AddEntitiesCallback` and `_BrunataAggregateWaterBase`) actually correct?**
+- **Are the 20 inferred relationships involving `SensorDeviceClass` (e.g. with `Any` and `str`) actually correct?**
   _`SensorDeviceClass` has 20 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 20 inferred relationships involving `SensorStateClass` (e.g. with `AddEntitiesCallback` and `_BrunataAggregateWaterBase`) actually correct?**
+- **Are the 20 inferred relationships involving `SensorStateClass` (e.g. with `Any` and `str`) actually correct?**
   _`SensorStateClass` has 20 INFERRED edges - model-reasoned connections that need verification._

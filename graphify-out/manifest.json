@@ -75,9 +75,9 @@
     "semantic_hash": "1aea88847075d9d22f397c4c3f244ed0"
   },
   "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\README.md": {
-    "mtime": 1787762165.8746057,
-    "ast_hash": "d58d43759e2a7f18d367bb0e1455422f",
-    "semantic_hash": "d58d43759e2a7f18d367bb0e1455422f"
+    "mtime": 1787763350.4347324,
+    "ast_hash": "174fa1e6fc34f74406497e9a551f0808",
+    "semantic_hash": "174fa1e6fc34f74406497e9a551f0808"
   },
   "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\requirements.txt": {
     "mtime": 1787762863.5751772,
@@ -138,5 +138,20 @@
     "mtime": 1781717342.4083102,
     "ast_hash": "21cf5bdae98bdee6d5affc82ea66788e",
     "semantic_hash": "21cf5bdae98bdee6d5affc82ea66788e"
+  },
+  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\.graphify_incremental.json": {
+    "mtime": 1787763386.769272,
+    "ast_hash": "3c8e836a85b0e45d1572d7dcc44b177d",
+    "semantic_hash": "3c8e836a85b0e45d1572d7dcc44b177d"
+  },
+  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\security_best_practices_report.md": {
+    "mtime": 1787762985.4726882,
+    "ast_hash": "d018715f7042facf4096aa894bde0b59",
+    "semantic_hash": "d018715f7042facf4096aa894bde0b59"
+  },
+  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\examples\\brunata_water_insights.yaml": {
+    "mtime": 1787763350.4337351,
+    "ast_hash": "546bd5024f82d0495a6ba00b8170360a",
+    "semantic_hash": "546bd5024f82d0495a6ba00b8170360a"
   }
 }
