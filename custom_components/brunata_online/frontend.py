@@ -11,6 +11,7 @@ from homeassistant.core import HomeAssistant
 PANEL_ELEMENT = "brunata-online-panel"
 PANEL_URL_PATH = "brunata-online"
 PANEL_JS_URL = "/brunata-online/brunata-panel.js"
+PANEL_I18N_URL = "/brunata-online/localize.js"
 PANEL_ICON_URL = "/brunata-online/icon.png"
 PANEL_REGISTERED = "brunata_online_panel_registered"
 
@@ -45,12 +46,16 @@ async def async_register_panel(hass: HomeAssistant) -> None:
 
     base = Path(__file__).parent
     panel_file = base / "www" / "brunata-panel.js"
+    i18n_file = base / "www" / "localize.js"
     icon_file = base / "brand" / "icon.png"
     await _register_static_path(hass, PANEL_JS_URL, panel_file)
+    await _register_static_path(hass, PANEL_I18N_URL, i18n_file)
     await _register_static_path(hass, PANEL_ICON_URL, icon_file)
 
     digest = await hass.async_add_executor_job(
-        lambda: hashlib.sha256(panel_file.read_bytes()).hexdigest()[:10]
+        lambda: hashlib.sha256(
+            panel_file.read_bytes() + i18n_file.read_bytes()
+        ).hexdigest()[:10]
     )
     frontend.async_register_built_in_panel(
         hass,
