@@ -10,3 +10,5 @@ docs/archives
 docs/json
 .env
 output/
+graphify-out/
+.playwright-mcp/
