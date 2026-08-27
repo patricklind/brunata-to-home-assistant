@@ -43,7 +43,9 @@ class BrunataOnlinePanel extends HTMLElement {
     this._settingsFeedback = null;
     try {
       const legacy = localStorage.getItem(LEGACY_SETTINGS_KEY);
-      this._legacySettings = legacy ? normalizeSettings(JSON.parse(legacy)) : null;
+      this._legacySettings = legacy
+        ? normalizeSettings(JSON.parse(legacy))
+        : null;
     } catch (_) {
       this._legacySettings = null;
     }
@@ -308,15 +310,15 @@ class BrunataOnlinePanel extends HTMLElement {
     )} / kWh</span><input name="heatingPrice" type="number" min="0" step="0.01" value="${
       s.heatingPrice
     }"></label>
-      <button class="save" type="submit" ${this._savingSettings ? "disabled" : ""}>${this._t(
-        "save"
-      )}</button>${
-        this._settingsFeedback
-          ? `<p class="settings-feedback ${this._settingsFeedback.type}" role="${
-              this._settingsFeedback.type === "error" ? "alert" : "status"
-            }">${escapeHtml(this._settingsFeedback.message)}</p>`
-          : ""
-      }</form></section>`;
+      <button class="save" type="submit" ${
+        this._savingSettings ? "disabled" : ""
+      }>${this._t("save")}</button>${
+      this._settingsFeedback
+        ? `<p class="settings-feedback ${this._settingsFeedback.type}" role="${
+            this._settingsFeedback.type === "error" ? "alert" : "status"
+          }">${escapeHtml(this._settingsFeedback.message)}</p>`
+        : ""
+    }</form></section>`;
   }
 
   _empty() {
@@ -423,9 +425,7 @@ class BrunataOnlinePanel extends HTMLElement {
           this._settingsFeedback = {
             type: "error",
             message:
-              this._t("unavailable") +
-              ": " +
-              (error?.message || String(error)),
+              this._t("unavailable") + ": " + (error?.message || String(error)),
           };
         } finally {
           this._savingSettings = false;
