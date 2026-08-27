@@ -1,157 +1,162 @@
 {
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\fetch_brunata_data.py": {
+  "fetch_brunata_data.py": {
     "mtime": 1787762787.5446744,
     "ast_hash": "4bbf49a09ee2e94f9687b32045d2c616",
     "semantic_hash": "4bbf49a09ee2e94f9687b32045d2c616"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\hacs.json": {
+  "hacs.json": {
     "mtime": 1781717342.41231,
     "ast_hash": "29b746c93e802e1fc8b7bae7a7e661b5",
     "semantic_hash": "29b746c93e802e1fc8b7bae7a7e661b5"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\.vscode\\launch.json": {
+  ".vscode/launch.json": {
     "mtime": 1781717342.4063027,
     "ast_hash": "bf8994f2bb034b143d2894e6f65419e8",
     "semantic_hash": "bf8994f2bb034b143d2894e6f65419e8"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\.vscode\\settings.json": {
+  ".vscode/settings.json": {
     "mtime": 1781717342.407311,
     "ast_hash": "b05ec651792e73369380c41fab9528ec",
     "semantic_hash": "b05ec651792e73369380c41fab9528ec"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\.vscode\\tasks.json": {
+  ".vscode/tasks.json": {
     "mtime": 1781717342.407311,
     "ast_hash": "f1e9c4a19b4223cdc3435cf6c595e06b",
     "semantic_hash": "f1e9c4a19b4223cdc3435cf6c595e06b"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\__init__.py": {
+  "custom_components/__init__.py": {
     "mtime": 1781717342.4083102,
     "ast_hash": "251da53529e28a7c1c12f9606168d117",
     "semantic_hash": "251da53529e28a7c1c12f9606168d117"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\api.py": {
+  "custom_components/brunata_online/api.py": {
     "mtime": 1787762349.1896462,
     "ast_hash": "b7c967c38447d235552a241c418f9de2",
     "semantic_hash": "b7c967c38447d235552a241c418f9de2"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\config_flow.py": {
+  "custom_components/brunata_online/config_flow.py": {
     "mtime": 1781717342.4093125,
     "ast_hash": "ed5e431d79b0b6a8a59d7fff8069f496",
     "semantic_hash": "ed5e431d79b0b6a8a59d7fff8069f496"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\const.py": {
+  "custom_components/brunata_online/const.py": {
     "mtime": 1781717342.4103034,
     "ast_hash": "6a8e9f0a0da134ccec285817cf5ecdfb",
     "semantic_hash": "6a8e9f0a0da134ccec285817cf5ecdfb"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\manifest.json": {
-    "mtime": 1787762165.877603,
-    "ast_hash": "5dccdf39cec679e69381c2d9bbe7c5e7",
-    "semantic_hash": "5dccdf39cec679e69381c2d9bbe7c5e7"
+  "custom_components/brunata_online/manifest.json": {
+    "mtime": 1787817483.2178462,
+    "ast_hash": "b16f9c014979ab9d5a6530c60b2447ac",
+    "semantic_hash": ""
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\sensor.py": {
+  "custom_components/brunata_online/sensor.py": {
     "mtime": 1787762165.8786106,
     "ast_hash": "93074ab6f4c72bc3837e6826b91899f1",
     "semantic_hash": "93074ab6f4c72bc3837e6826b91899f1"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\__init__.py": {
+  "custom_components/brunata_online/__init__.py": {
     "mtime": 1781717342.4093125,
     "ast_hash": "05d0a4a1ede64c493a165c38f41e9796",
     "semantic_hash": "05d0a4a1ede64c493a165c38f41e9796"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\translations\\da.json": {
+  "custom_components/brunata_online/translations/da.json": {
     "mtime": 1781717342.4113102,
     "ast_hash": "d8f5e4d6c80ae4b8653e2f00a84543a8",
     "semantic_hash": "d8f5e4d6c80ae4b8653e2f00a84543a8"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\custom_components\\brunata_online\\translations\\en.json": {
+  "custom_components/brunata_online/translations/en.json": {
     "mtime": 1781717342.4113102,
     "ast_hash": "8f9f24ee0ac0593356fd5a98497e48d2",
     "semantic_hash": "8f9f24ee0ac0593356fd5a98497e48d2"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\tests\\test_api.py": {
+  "tests/test_api.py": {
     "mtime": 1787762787.499636,
     "ast_hash": "1aea88847075d9d22f397c4c3f244ed0",
     "semantic_hash": "1aea88847075d9d22f397c4c3f244ed0"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\README.md": {
-    "mtime": 1787763350.4347324,
-    "ast_hash": "174fa1e6fc34f74406497e9a551f0808",
-    "semantic_hash": "174fa1e6fc34f74406497e9a551f0808"
+  "README.md": {
+    "mtime": 1787817391.6171486,
+    "ast_hash": "ab576205630d352f828b96e91c7597d5",
+    "semantic_hash": ""
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\requirements.txt": {
+  "requirements.txt": {
     "mtime": 1787762863.5751772,
     "ast_hash": "3a9de8a6f9c3b07b5d5b18d145846b50",
     "semantic_hash": "3a9de8a6f9c3b07b5d5b18d145846b50"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\.github\\dependabot.yml": {
+  ".github/dependabot.yml": {
     "mtime": 1781717342.404303,
     "ast_hash": "b823653695ceb3d88362081b956b76fc",
     "semantic_hash": "b823653695ceb3d88362081b956b76fc"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\.github\\FUNDING.yml": {
+  ".github/FUNDING.yml": {
     "mtime": 1781717342.4033036,
     "ast_hash": "1e9fae0e9b2702015c6fe34de5a291d4",
     "semantic_hash": "1e9fae0e9b2702015c6fe34de5a291d4"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\.github\\labels.yml": {
+  ".github/labels.yml": {
     "mtime": 1781717342.404303,
     "ast_hash": "83269c65db4573280875806c6b263d82",
     "semantic_hash": "83269c65db4573280875806c6b263d82"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\.github\\pre-commit.yml": {
+  ".github/pre-commit.yml": {
     "mtime": 1781717342.404303,
     "ast_hash": "5730823cf761942c5e32c11cc656a00e",
     "semantic_hash": "5730823cf761942c5e32c11cc656a00e"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\.github\\release-drafter.yml": {
+  ".github/release-drafter.yml": {
     "mtime": 1781717342.405303,
     "ast_hash": "4004c665eba8b92c1eea16e3ff53f010",
     "semantic_hash": "4004c665eba8b92c1eea16e3ff53f010"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\.github\\ISSUE_TEMPLATE\\feature_request.md": {
+  ".github/ISSUE_TEMPLATE/feature_request.md": {
     "mtime": 1781717342.4033036,
     "ast_hash": "f4ca5790b3075d00724dc039e8fb6316",
     "semantic_hash": "f4ca5790b3075d00724dc039e8fb6316"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\.github\\ISSUE_TEMPLATE\\issue.md": {
+  ".github/ISSUE_TEMPLATE/issue.md": {
     "mtime": 1781717342.4033036,
     "ast_hash": "397878182a7873a7abd4aada5cd760e4",
     "semantic_hash": "397878182a7873a7abd4aada5cd760e4"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\.github\\workflows\\constraints.txt": {
+  ".github/workflows/constraints.txt": {
     "mtime": 1781717342.405303,
     "ast_hash": "751bb1dee9a75a2892f64ea7ea715ed0",
     "semantic_hash": "751bb1dee9a75a2892f64ea7ea715ed0"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\.github\\workflows\\release-on-tag.yml": {
+  ".github/workflows/release-on-tag.yml": {
     "mtime": 1787762165.8716033,
     "ast_hash": "889c8a3caff12beccb7fd8c6d6f52637",
     "semantic_hash": "889c8a3caff12beccb7fd8c6d6f52637"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\.github\\workflows\\tests.yaml": {
+  ".github/workflows/tests.yaml": {
     "mtime": 1787762165.8726046,
     "ast_hash": "cfa326bb0d64282b414b3755f3c3b81e",
     "semantic_hash": "cfa326bb0d64282b414b3755f3c3b81e"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\assets\\brunata-logo.svg": {
+  "assets/brunata-logo.svg": {
     "mtime": 1781717342.4083102,
     "ast_hash": "21cf5bdae98bdee6d5affc82ea66788e",
     "semantic_hash": "21cf5bdae98bdee6d5affc82ea66788e"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\.graphify_incremental.json": {
-    "mtime": 1787763386.769272,
-    "ast_hash": "3c8e836a85b0e45d1572d7dcc44b177d",
-    "semantic_hash": "3c8e836a85b0e45d1572d7dcc44b177d"
-  },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\security_best_practices_report.md": {
+  "security_best_practices_report.md": {
     "mtime": 1787762985.4726882,
     "ast_hash": "d018715f7042facf4096aa894bde0b59",
     "semantic_hash": "d018715f7042facf4096aa894bde0b59"
   },
-  "C:\\Users\\ithh\\Documents\\GitHub\\brunata-to-home-assistant\\examples\\brunata_water_insights.yaml": {
+  "examples/brunata_water_insights.yaml": {
     "mtime": 1787763350.4337351,
     "ast_hash": "546bd5024f82d0495a6ba00b8170360a",
     "semantic_hash": "546bd5024f82d0495a6ba00b8170360a"
+  },
+  "custom_components/brunata_online/diagnostics.py": {
+    "mtime": 1787817391.6161485,
+    "ast_hash": "0f70c810c57557f946b3af7c78d1706e",
+    "semantic_hash": ""
+  },
+  "tests/test_diagnostics.py": {
+    "mtime": 1787817417.0614798,
+    "ast_hash": "69fd22879aa90ebe84342e06b01cf80c",
+    "semantic_hash": ""
   }
 }

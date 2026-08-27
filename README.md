@@ -183,10 +183,20 @@ Output files:
    - First refresh may expose empty `last N days` until history cache is filled.
 
 4. **A water transmitter was replaced**
+
    - Brunata may stop returning a current value for the old transmitter while
      the new transmitter reports only consumption since the exchange.
    - The total sensors retain the old transmitter's latest historical reading
      as the baseline and add the replacement transmitter's reading.
+
+5. **A meter shows an old or unexpectedly low total**
+
+   - Open `Settings -> Devices & services -> Brunata Online`.
+   - Choose the three-dot menu and **Download diagnostics**.
+   - Attach the JSON file to the GitHub issue together with the expected total.
+   - Credentials, consumer details, placement, serial numbers, and raw meter IDs
+     are excluded. Reading values and dates remain because they are required to
+     diagnose date selection and replaced transmitters.
 
 ---
 
