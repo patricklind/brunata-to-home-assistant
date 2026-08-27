@@ -48,6 +48,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: BrunataConfigEntry) -> b
 
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
+    from .frontend import async_register_panel
+    from .panel import async_register_websocket
+
+    async_register_websocket(hass)
+    await async_register_panel(hass)
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
@@ -57,6 +63,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: BrunataConfigEntry) -> 
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
+        if not hass.data.get(DOMAIN):
+            from .frontend import async_unregister_panel
+
+            await async_unregister_panel(hass)
     return unload_ok
 
 
