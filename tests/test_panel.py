@@ -18,6 +18,7 @@ websocket_api = types.ModuleType("homeassistant.components.websocket_api")
 websocket_api.ActiveConnection = object
 websocket_api.websocket_command = lambda schema: lambda func: func
 websocket_api.async_response = lambda func: func
+websocket_api.require_admin = lambda func: func
 websocket_api.async_register_command = lambda hass, command: None
 sys.modules["homeassistant.components.websocket_api"] = websocket_api
 
@@ -73,9 +74,7 @@ class PanelPayloadTests(unittest.TestCase):
             last_update_success=True,
             last_update_success_time=datetime(2026, 8, 27, tzinfo=timezone.utc),
         )
-        hass = types.SimpleNamespace(
-            data={"brunata_online": {"entry-id": coordinator}}
-        )
+        hass = types.SimpleNamespace(data={"brunata_online": {"entry-id": coordinator}})
 
         result = panel.build_panel_payload(hass)
         account = result["accounts"][0]

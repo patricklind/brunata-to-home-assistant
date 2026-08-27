@@ -65,9 +65,7 @@ def build_panel_payload(hass: HomeAssistant) -> dict[str, Any]:
             if not isinstance(row, dict):
                 continue
             meter = row.get("meter") if isinstance(row.get("meter"), dict) else {}
-            reading = (
-                row.get("reading") if isinstance(row.get("reading"), dict) else {}
-            )
+            reading = row.get("reading") if isinstance(row.get("reading"), dict) else {}
             key = "|".join(
                 str(meter.get(name) or "")
                 for name in ("meterId", "meterSequenceNo", "meterNo", "allocationUnit")
@@ -116,11 +114,12 @@ def build_panel_payload(hass: HomeAssistant) -> dict[str, Any]:
 
 
 @websocket_api.websocket_command({vol.Required("type"): "brunata_online/panel_data"})
+@websocket_api.require_admin
 @websocket_api.async_response
 async def websocket_panel_data(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
-    """Return the latest coordinator data to an authenticated HA user."""
+    """Return the latest coordinator data to a Home Assistant administrator."""
     connection.send_result(msg["id"], build_panel_payload(hass))
 
 

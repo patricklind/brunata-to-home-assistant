@@ -7,7 +7,6 @@ import logging
 
 from aiohttp import ClientError
 from homeassistant import config_entries
-from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import voluptuous as vol
 
@@ -70,18 +69,3 @@ class BrunataOnlineConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         except Exception as err:  # pylint: disable=broad-except
             _LOGGER.exception("Unexpected Brunata validation error: %s", err)
             return "unknown"
-
-    @staticmethod
-    @callback
-    def async_get_options_flow(config_entry):
-        return BrunataOptionsFlow(config_entry)
-
-
-class BrunataOptionsFlow(config_entries.OptionsFlow):
-    """No options yet."""
-
-    def __init__(self, config_entry) -> None:
-        self.config_entry = config_entry
-
-    async def async_step_init(self, user_input=None):
-        return self.async_create_entry(title="", data={})

@@ -38,7 +38,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: BrunataConfigEntry) -> b
         session,
     )
 
-    coordinator = BrunataDataCoordinator(hass, client)
+    coordinator = BrunataDataCoordinator(hass, client, entry)
     await coordinator.async_refresh()
     if not coordinator.last_update_success:
         _LOGGER.warning(
@@ -73,8 +73,16 @@ async def async_unload_entry(hass: HomeAssistant, entry: BrunataConfigEntry) -> 
 class BrunataDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Coordinator for Brunata data updates."""
 
-    def __init__(self, hass: HomeAssistant, client: BrunataOnlineClient) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        client: BrunataOnlineClient,
+        config_entry: BrunataConfigEntry,
+    ) -> None:
         self.client = client
+        # Keep compatibility with the integration's HA 2024.6 minimum while
+        # exposing the entry title to the multi-account panel.
+        self.config_entry = config_entry
         super().__init__(
             hass,
             logger=_LOGGER,

@@ -98,4 +98,4 @@ jobs:
         with:
           node-version: 24
       - name: Run frontend tests
-        run: node --test tests/panel_i18n.test.mjs
+        run: node --test tests/*.test.mjs

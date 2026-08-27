@@ -86,6 +86,7 @@ flowchart LR
 
 - Config-flow setup in Home Assistant UI (no YAML config required)
 - Per-meter sensors for water and heating
+- Administrator-only sidebar panel for readings, history, costs, and display settings
 - Per-meter rolling consumption sensors:
   - Water: last `1`, `7`, `14`, `30` days
   - Heating: last `30` days
@@ -124,6 +125,10 @@ flowchart LR
 2. Click **Add Integration**.
 3. Search for **Brunata Online**.
 4. Enter Brunata username/email and password.
+
+The **Brunata** sidebar panel is shown to Home Assistant administrators. Its
+period, precision, currency, and unit-price settings are stored locally in the
+current browser; they do not change sensor data or Brunata readings.
 
 ---
 
@@ -258,9 +263,10 @@ estimate or rolling `last N days` sensors for billing/statistics.
    - `git push origin vX.Y.Z`
 4. Workflow `Release from tag` publishes GitHub Release automatically.
 
-The workflow rejects a tag that does not match the version in the integration
-manifest, preventing the Releases and Tags pages from advertising different
-versions.
+The workflow runs tests, formatting/static checks, HACS validation, and Hassfest
+before publishing. It also rejects a tag that does not match the integration
+manifest version, preventing the Releases and Tags pages from advertising
+different versions.
 
 > [!CAUTION]
 > If tags are pushed from HTTPS token without `workflow` scope, workflow-file changes may be rejected.

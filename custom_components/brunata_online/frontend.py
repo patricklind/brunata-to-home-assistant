@@ -12,31 +12,44 @@ PANEL_ELEMENT = "brunata-online-panel"
 PANEL_URL_PATH = "brunata-online"
 PANEL_JS_URL = "/brunata-online/brunata-panel.js"
 PANEL_I18N_URL = "/brunata-online/localize.js"
+PANEL_MODEL_URL = "/brunata-online/panel-model.js"
 PANEL_ICON_URL = "/brunata-online/icon.png"
 PANEL_REGISTERED = "brunata_online_panel_registered"
 
 
 async def _register_static_path(
-    hass: HomeAssistant, url_path: str, file_path: Path
+    hass: HomeAssistant,
+    url_path: str,
+    file_path: Path,
+    *,
+    cache_headers: bool = True,
 ) -> None:
     """Register a cacheable static file on old and new HA versions."""
     try:
         from homeassistant.components.http import StaticPathConfig
     except ImportError:
-        hass.http.register_static_path(url_path, str(file_path), cache_headers=True)
+        hass.http.register_static_path(
+            url_path, str(file_path), cache_headers=cache_headers
+        )
         return
 
     if hasattr(hass.http, "async_register_static_paths"):
         try:
             await hass.http.async_register_static_paths(
-                [StaticPathConfig(url_path, str(file_path), cache_headers=True)]
+                [
+                    StaticPathConfig(
+                        url_path, str(file_path), cache_headers=cache_headers
+                    )
+                ]
             )
         except Exception as err:  # Reloading may leave the route registered.
             if "already" not in str(err).lower():
                 raise
         return
 
-    hass.http.register_static_path(url_path, str(file_path), cache_headers=True)
+    hass.http.register_static_path(
+        url_path, str(file_path), cache_headers=cache_headers
+    )
 
 
 async def async_register_panel(hass: HomeAssistant) -> None:
@@ -47,14 +60,18 @@ async def async_register_panel(hass: HomeAssistant) -> None:
     base = Path(__file__).parent
     panel_file = base / "www" / "brunata-panel.js"
     i18n_file = base / "www" / "localize.js"
+    model_file = base / "www" / "panel-model.js"
     icon_file = base / "brand" / "icon.png"
     await _register_static_path(hass, PANEL_JS_URL, panel_file)
-    await _register_static_path(hass, PANEL_I18N_URL, i18n_file)
+    # Imported modules do not inherit the cache-busting query on the entry
+    # module, so let browsers revalidate them after integration upgrades.
+    await _register_static_path(hass, PANEL_I18N_URL, i18n_file, cache_headers=False)
+    await _register_static_path(hass, PANEL_MODEL_URL, model_file, cache_headers=False)
     await _register_static_path(hass, PANEL_ICON_URL, icon_file)
 
     digest = await hass.async_add_executor_job(
         lambda: hashlib.sha256(
-            panel_file.read_bytes() + i18n_file.read_bytes()
+            panel_file.read_bytes() + i18n_file.read_bytes() + model_file.read_bytes()
         ).hexdigest()[:10]
     )
     frontend.async_register_built_in_panel(
@@ -71,7 +88,7 @@ async def async_register_panel(hass: HomeAssistant) -> None:
                 "trust_external": False,
             }
         },
-        require_admin=False,
+        require_admin=True,
     )
     hass.data[PANEL_REGISTERED] = True
 
