@@ -18,7 +18,14 @@ websocket_api = types.ModuleType("homeassistant.components.websocket_api")
 websocket_api.ActiveConnection = object
 websocket_api.websocket_command = lambda schema: lambda func: func
 websocket_api.async_response = lambda func: func
-websocket_api.require_admin = lambda func: func
+
+
+def _require_admin(func):
+    func.requires_admin = True
+    return func
+
+
+websocket_api.require_admin = _require_admin
 websocket_api.async_register_command = lambda hass, command: None
 sys.modules["homeassistant.components.websocket_api"] = websocket_api
 
@@ -87,6 +94,9 @@ class PanelPayloadTests(unittest.TestCase):
         self.assertEqual(
             [point["value"] for point in reading["history"]], [120.0, 123.45]
         )
+
+    def test_websocket_payload_requires_admin(self) -> None:
+        self.assertIs(panel.websocket_panel_data.requires_admin, True)
 
 
 if __name__ == "__main__":

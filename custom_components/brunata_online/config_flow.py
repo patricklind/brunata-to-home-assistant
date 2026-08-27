@@ -69,3 +69,37 @@ class BrunataOnlineConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         except Exception as err:  # pylint: disable=broad-except
             _LOGGER.exception("Unexpected Brunata validation error: %s", err)
             return "unknown"
+
+    async def async_step_reauth(self, entry_data: dict[str, str]):
+        """Start reauthentication for an existing Brunata account."""
+        del entry_data
+        self._reauth_entry = self.hass.config_entries.async_get_entry(
+            self.context["entry_id"]
+        )
+        if self._reauth_entry is None:
+            return self.async_abort(reason="unknown")
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(self, user_input: dict | None = None):
+        """Validate and store a replacement password."""
+        errors: dict[str, str] = {}
+        username = self._reauth_entry.data[CONF_USERNAME]
+
+        if user_input is not None:
+            password = user_input[CONF_PASSWORD]
+            result = await self._test_credentials(username, password)
+            if result == "ok":
+                updated_data = dict(self._reauth_entry.data)
+                updated_data[CONF_PASSWORD] = password
+                return self.async_update_reload_and_abort(
+                    self._reauth_entry,
+                    data=updated_data,
+                )
+            errors["base"] = result
+
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=vol.Schema({vol.Required(CONF_PASSWORD): str}),
+            errors=errors,
+            description_placeholders={"username": username},
+        )

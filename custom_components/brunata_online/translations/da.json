@@ -8,6 +8,13 @@
           "username": "Brugernavn eller email",
           "password": "Adgangskode"
         }
+      },
+      "reauth_confirm": {
+        "title": "Forbind Brunata Online igen",
+        "description": "Indtast den aktuelle adgangskode til {username}.",
+        "data": {
+          "password": "Adgangskode"
+        }
       }
     },
     "error": {

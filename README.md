@@ -85,6 +85,7 @@ flowchart LR
 ## Features
 
 - Config-flow setup in Home Assistant UI (no YAML config required)
+- Home Assistant reauthentication flow when Brunata rejects stored credentials
 - Per-meter sensors for water and heating
 - Administrator-only sidebar panel for readings, history, costs, and display settings
 - Per-meter rolling consumption sensors:

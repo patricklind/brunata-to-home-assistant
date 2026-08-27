@@ -7,6 +7,7 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -94,6 +95,6 @@ class BrunataDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         try:
             return await self.client.async_fetch_data()
         except BrunataAuthError as err:
-            raise UpdateFailed(f"Authentication failed: {err}") from err
+            raise ConfigEntryAuthFailed(f"Authentication failed: {err}") from err
         except Exception as err:  # pylint: disable=broad-except
             raise UpdateFailed(f"Failed to update Brunata data: {err}") from err
