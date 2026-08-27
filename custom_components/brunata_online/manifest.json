@@ -8,5 +8,5 @@
   "issue_tracker": "https://github.com/patricklind/brunata-to-home-assistant/issues",
   "loggers": ["custom_components.brunata_online"],
   "requirements": ["requests>=2.31.0"],
-  "version": "1.0.27"
+  "version": "1.0.28"
 }
