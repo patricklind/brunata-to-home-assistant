@@ -1,5 +1,18 @@
 # brunata-to-home-assistant
 
+> [!IMPORTANT]
+>
+> **Reporting a bug:** Before opening a [GitHub issue](https://github.com/patricklind/brunata-to-home-assistant/issues), update to the latest release and include:
+>
+> - the Brunata Online integration version and Home Assistant version;
+> - a clear description of the expected and actual result;
+> - the affected meter type and the relevant dates/values shown by Brunata and Home Assistant;
+> - steps to reproduce the problem;
+> - relevant debug logs; and
+> - the diagnostics file from **Settings → Devices & services → Brunata Online → three-dot menu → Download diagnostics**.
+>
+> Never post your password, access token, cookies, or unredacted personal information. The integration diagnostics exclude credentials, consumer details, placement, serial numbers, and raw meter IDs, but retain reading values and dates needed for troubleshooting.
+
 > [!WARNING]
 > We are aware that there are issues in the codebase.
 > This is a hobby project maintained in spare time.
