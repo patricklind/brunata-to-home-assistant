@@ -1,1 +1,406 @@
-{"nodes": [{"id": "readme_brunata_online", "label": "Brunata Online", "file_type": "document", "source_file": "README.md", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}, {"id": "readme_brunata_integration", "label": "brunata_online Integration", "file_type": "document", "source_file": "README.md", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null, "rationale": "Read-only custom integration that synchronizes Brunata meter data into Home Assistant."}, {"id": "readme_home_assistant", "label": "Home Assistant", "file_type": "document", "source_file": "README.md", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null, "rationale": "Designated source of truth for automations and dashboards."}, {"id": "readme_home_assistant_entities", "label": "Home Assistant Entities", "file_type": "document", "source_file": "README.md", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}, {"id": "readme_energy_water_dashboard", "label": "Energy/Water Dashboard", "file_type": "document", "source_file": "README.md", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}, {"id": "readme_config_flow", "label": "Home Assistant Config Flow", "file_type": "document", "source_file": "README.md", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}, {"id": "readme_keycloak", "label": "Keycloak Credential Form", "file_type": "document", "source_file": "README.md", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}, {"id": "readme_bearer_token", "label": "Bearer Token", "file_type": "document", "source_file": "README.md", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}, {"id": "readme_history_cache", "label": "History Cache", "file_type": "document", "source_file": "README.md", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}, {"id": "readme_rolling_consumption", "label": "Rolling Consumption Sensors", "file_type": "document", "source_file": "README.md", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}, {"id": "readme_distributed_estimate", "label": "Distributed Estimate Sensor", "file_type": "document", "source_file": "README.md", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}, {"id": "readme_water_total", "label": "sensor.brunata_water_total", "file_type": "document", "source_file": "README.md", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}, {"id": "readme_cold_water_total", "label": "sensor.brunata_cold_water_total", "file_type": "document", "source_file": "README.md", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}, {"id": "readme_hot_water_total", "label": "sensor.brunata_hot_water_total", "file_type": "document", "source_file": "README.md", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}, {"id": "readme_hacs", "label": "HACS", "file_type": "document", "source_file": "README.md", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}, {"id": "readme_fetch_script", "label": "fetch_brunata_data.py", "file_type": "document", "source_file": "README.md", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}, {"id": "readme_optional_water_insights", "label": "Optional Water Insights Package", "file_type": "document", "source_file": "README.md", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}], "edges": [{"source": "readme_brunata_online", "target": "readme_brunata_integration", "relation": "provides_data_to", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "README.md", "source_location": null, "weight": 1.0}, {"source": "readme_brunata_integration", "target": "readme_home_assistant_entities", "relation": "creates", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "README.md", "source_location": null, "weight": 1.0}, {"source": "readme_home_assistant_entities", "target": "readme_energy_water_dashboard", "relation": "feeds", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "README.md", "source_location": null, "weight": 1.0}, {"source": "readme_home_assistant", "target": "readme_optional_water_insights", "relation": "hosts", "confidence": "INFERRED", "confidence_score": 0.9, "source_file": "README.md", "source_location": null, "weight": 1.0}, {"source": "readme_config_flow", "target": "readme_brunata_integration", "relation": "configures", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "README.md", "source_location": null, "weight": 1.0}, {"source": "readme_brunata_integration", "target": "readme_keycloak", "relation": "authenticates_via", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "README.md", "source_location": null, "weight": 1.0}, {"source": "readme_keycloak", "target": "readme_bearer_token", "relation": "enables", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "README.md", "source_location": null, "weight": 1.0}, {"source": "readme_bearer_token", "target": "readme_brunata_online", "relation": "authorizes_requests_to", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "README.md", "source_location": null, "weight": 1.0}, {"source": "readme_brunata_online", "target": "readme_history_cache", "relation": "supplies_daily_snapshots_to", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "README.md", "source_location": null, "weight": 1.0}, {"source": "readme_history_cache", "target": "readme_rolling_consumption", "relation": "drives", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "README.md", "source_location": null, "weight": 1.0}, {"source": "readme_history_cache", "target": "readme_distributed_estimate", "relation": "drives", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "README.md", "source_location": null, "weight": 1.0}, {"source": "readme_water_total", "target": "readme_energy_water_dashboard", "relation": "used_by", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "README.md", "source_location": null, "weight": 1.0}, {"source": "readme_cold_water_total", "target": "readme_energy_water_dashboard", "relation": "used_by", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "README.md", "source_location": null, "weight": 1.0}, {"source": "readme_hot_water_total", "target": "readme_energy_water_dashboard", "relation": "used_by", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "README.md", "source_location": null, "weight": 1.0}, {"source": "readme_hacs", "target": "readme_brunata_integration", "relation": "installs", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "README.md", "source_location": null, "weight": 1.0}, {"source": "readme_fetch_script", "target": "readme_brunata_online", "relation": "tests_login_and_data_retrieval_from", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "README.md", "source_location": null, "weight": 1.0}, {"source": "readme_optional_water_insights", "target": "readme_water_total", "relation": "uses", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "README.md", "source_location": null, "weight": 1.0}, {"source": "readme_optional_water_insights", "target": "readme_cold_water_total", "relation": "uses", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "README.md", "source_location": null, "weight": 1.0}, {"source": "readme_optional_water_insights", "target": "readme_hot_water_total", "relation": "uses", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "README.md", "source_location": null, "weight": 1.0}, {"source": "readme_rolling_consumption", "target": "readme_energy_water_dashboard", "relation": "not_suitable_as_cumulative_source_for", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "README.md", "source_location": null, "weight": 1.0}, {"source": "readme_distributed_estimate", "target": "insights_utility_meter", "relation": "not_suitable_as_source_for", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "README.md", "source_location": null, "weight": 1.0}], "hyperedges": []}
+{
+  "nodes": [
+    {
+      "id": "readme_brunata_online",
+      "label": "Brunata Online",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_brunata_integration",
+      "label": "brunata_online Integration",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Read-only custom integration that synchronizes Brunata meter data into Home Assistant."
+    },
+    {
+      "id": "readme_home_assistant",
+      "label": "Home Assistant",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Designated source of truth for automations and dashboards."
+    },
+    {
+      "id": "readme_home_assistant_entities",
+      "label": "Home Assistant Entities",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_energy_water_dashboard",
+      "label": "Energy/Water Dashboard",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_config_flow",
+      "label": "Home Assistant Config Flow",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_keycloak",
+      "label": "Keycloak Credential Form",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_bearer_token",
+      "label": "Bearer Token",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_history_cache",
+      "label": "History Cache",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_rolling_consumption",
+      "label": "Rolling Consumption Sensors",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_distributed_estimate",
+      "label": "Distributed Estimate Sensor",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_water_total",
+      "label": "sensor.brunata_water_total",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_cold_water_total",
+      "label": "sensor.brunata_cold_water_total",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_hot_water_total",
+      "label": "sensor.brunata_hot_water_total",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_hacs",
+      "label": "HACS",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_fetch_script",
+      "label": "fetch_brunata_data.py",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_optional_water_insights",
+      "label": "Optional Water Insights Package",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "readme_brunata_online",
+      "target": "readme_brunata_integration",
+      "relation": "provides_data_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_brunata_integration",
+      "target": "readme_home_assistant_entities",
+      "relation": "creates",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_home_assistant_entities",
+      "target": "readme_energy_water_dashboard",
+      "relation": "feeds",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_home_assistant",
+      "target": "readme_optional_water_insights",
+      "relation": "hosts",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_config_flow",
+      "target": "readme_brunata_integration",
+      "relation": "configures",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_brunata_integration",
+      "target": "readme_keycloak",
+      "relation": "authenticates_via",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_keycloak",
+      "target": "readme_bearer_token",
+      "relation": "enables",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_bearer_token",
+      "target": "readme_brunata_online",
+      "relation": "authorizes_requests_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_brunata_online",
+      "target": "readme_history_cache",
+      "relation": "supplies_daily_snapshots_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_history_cache",
+      "target": "readme_rolling_consumption",
+      "relation": "drives",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_history_cache",
+      "target": "readme_distributed_estimate",
+      "relation": "drives",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_water_total",
+      "target": "readme_energy_water_dashboard",
+      "relation": "used_by",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_cold_water_total",
+      "target": "readme_energy_water_dashboard",
+      "relation": "used_by",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_hot_water_total",
+      "target": "readme_energy_water_dashboard",
+      "relation": "used_by",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_hacs",
+      "target": "readme_brunata_integration",
+      "relation": "installs",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_fetch_script",
+      "target": "readme_brunata_online",
+      "relation": "tests_login_and_data_retrieval_from",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_optional_water_insights",
+      "target": "readme_water_total",
+      "relation": "uses",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_optional_water_insights",
+      "target": "readme_cold_water_total",
+      "relation": "uses",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_optional_water_insights",
+      "target": "readme_hot_water_total",
+      "relation": "uses",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_rolling_consumption",
+      "target": "readme_energy_water_dashboard",
+      "relation": "not_suitable_as_cumulative_source_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_distributed_estimate",
+      "target": "insights_utility_meter",
+      "relation": "not_suitable_as_source_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

@@ -1,1 +1,79 @@
-{"nodes": [{"id": "c_users_ithh_documents_github_brunata_to_home_assistant_github_issue_template_issue_md", "label": "issue.md", "file_type": "document", "source_file": ".github/ISSUE_TEMPLATE/issue.md", "source_location": "L1"}, {"id": "issue_template_issue_version_of_the_custom_component", "label": "Version of the custom_component", "file_type": "document", "source_file": ".github/ISSUE_TEMPLATE/issue.md", "source_location": "L16"}, {"id": "issue_template_issue_configuration", "label": "Configuration", "file_type": "document", "source_file": ".github/ISSUE_TEMPLATE/issue.md", "source_location": "L22"}, {"id": "issue_template_issue_describe_the_bug", "label": "Describe the bug", "file_type": "document", "source_file": ".github/ISSUE_TEMPLATE/issue.md", "source_location": "L28"}, {"id": "issue_template_issue_debug_log", "label": "Debug log", "file_type": "document", "source_file": ".github/ISSUE_TEMPLATE/issue.md", "source_location": "L32"}], "edges": [{"source": "c_users_ithh_documents_github_brunata_to_home_assistant_github_issue_template_issue_md", "target": "issue_template_issue_version_of_the_custom_component", "relation": "contains", "confidence": "EXTRACTED", "source_file": ".github/ISSUE_TEMPLATE/issue.md", "source_location": "L16", "weight": 1.0}, {"source": "c_users_ithh_documents_github_brunata_to_home_assistant_github_issue_template_issue_md", "target": "issue_template_issue_configuration", "relation": "contains", "confidence": "EXTRACTED", "source_file": ".github/ISSUE_TEMPLATE/issue.md", "source_location": "L22", "weight": 1.0}, {"source": "c_users_ithh_documents_github_brunata_to_home_assistant_github_issue_template_issue_md", "target": "issue_template_issue_describe_the_bug", "relation": "contains", "confidence": "EXTRACTED", "source_file": ".github/ISSUE_TEMPLATE/issue.md", "source_location": "L28", "weight": 1.0}, {"source": "c_users_ithh_documents_github_brunata_to_home_assistant_github_issue_template_issue_md", "target": "issue_template_issue_debug_log", "relation": "contains", "confidence": "EXTRACTED", "source_file": ".github/ISSUE_TEMPLATE/issue.md", "source_location": "L32", "weight": 1.0}], "input_tokens": 0, "output_tokens": 0}
+{
+  "nodes": [
+    {
+      "id": "c_users_ithh_documents_github_brunata_to_home_assistant_github_issue_template_issue_md",
+      "label": "issue.md",
+      "file_type": "document",
+      "source_file": ".github/ISSUE_TEMPLATE/issue.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "issue_template_issue_version_of_the_custom_component",
+      "label": "Version of the custom_component",
+      "file_type": "document",
+      "source_file": ".github/ISSUE_TEMPLATE/issue.md",
+      "source_location": "L16"
+    },
+    {
+      "id": "issue_template_issue_configuration",
+      "label": "Configuration",
+      "file_type": "document",
+      "source_file": ".github/ISSUE_TEMPLATE/issue.md",
+      "source_location": "L22"
+    },
+    {
+      "id": "issue_template_issue_describe_the_bug",
+      "label": "Describe the bug",
+      "file_type": "document",
+      "source_file": ".github/ISSUE_TEMPLATE/issue.md",
+      "source_location": "L28"
+    },
+    {
+      "id": "issue_template_issue_debug_log",
+      "label": "Debug log",
+      "file_type": "document",
+      "source_file": ".github/ISSUE_TEMPLATE/issue.md",
+      "source_location": "L32"
+    }
+  ],
+  "edges": [
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_github_issue_template_issue_md",
+      "target": "issue_template_issue_version_of_the_custom_component",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".github/ISSUE_TEMPLATE/issue.md",
+      "source_location": "L16",
+      "weight": 1.0
+    },
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_github_issue_template_issue_md",
+      "target": "issue_template_issue_configuration",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".github/ISSUE_TEMPLATE/issue.md",
+      "source_location": "L22",
+      "weight": 1.0
+    },
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_github_issue_template_issue_md",
+      "target": "issue_template_issue_describe_the_bug",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".github/ISSUE_TEMPLATE/issue.md",
+      "source_location": "L28",
+      "weight": 1.0
+    },
+    {
+      "source": "c_users_ithh_documents_github_brunata_to_home_assistant_github_issue_template_issue_md",
+      "target": "issue_template_issue_debug_log",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".github/ISSUE_TEMPLATE/issue.md",
+      "source_location": "L32",
+      "weight": 1.0
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}
