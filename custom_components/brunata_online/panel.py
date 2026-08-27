@@ -2,22 +2,37 @@
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 import voluptuous as vol
 
 from homeassistant.components import websocket_api
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN
 
 PANEL_WS_REGISTERED = "brunata_online_panel_ws_registered"
+PANEL_SETTINGS_DATA = "brunata_online_panel_settings"
+PANEL_SETTINGS_STORE = "brunata_online_panel_settings_store"
+PANEL_SETTINGS_STORAGE_KEY = "brunata_online.panel_settings"
+DEFAULT_PANEL_SETTINGS: dict[str, Any] = {
+    "period": 30,
+    "precision": 2,
+    "currency": "EUR",
+    "waterPrice": 0.0,
+    "heatingPrice": 0.0,
+}
 
 
 def _number(value: Any) -> float | None:
     """Convert Brunata's localized numeric values for the frontend."""
+    if isinstance(value, bool):
+        return None
     if isinstance(value, (int, float)):
-        return float(value)
+        number = float(value)
+        return number if math.isfinite(number) else None
     if not isinstance(value, str):
         return None
     text = value.strip().replace(" ", "")
@@ -32,9 +47,34 @@ def _number(value: Any) -> float | None:
     elif "," in text:
         text = text.replace(",", ".")
     try:
-        return float(text)
+        number = float(text)
+        return number if math.isfinite(number) else None
     except ValueError:
         return None
+
+
+def normalize_panel_settings(value: Any) -> dict[str, Any]:
+    """Validate persisted or WebSocket-provided display settings."""
+    source = value if isinstance(value, dict) else {}
+    period = 7 if _number(source.get("period")) == 7 else 30
+    precision_value = _number(source.get("precision"))
+    precision = round(precision_value) if precision_value is not None else 2
+    precision = min(3, max(0, precision))
+    currency = str(source.get("currency") or "").upper()
+    if not currency.isascii() or not currency.isalpha() or len(currency) != 3:
+        currency = "EUR"
+
+    def price(name: str) -> float:
+        parsed = _number(source.get(name))
+        return max(0.0, parsed) if parsed is not None else 0.0
+
+    return {
+        "period": period,
+        "precision": precision,
+        "currency": currency,
+        "waterPrice": price("waterPrice"),
+        "heatingPrice": price("heatingPrice"),
+    }
 
 
 def _medium(meter: dict[str, Any]) -> str:
@@ -110,7 +150,10 @@ def build_panel_payload(hass: HomeAssistant) -> dict[str, Any]:
                 "meters": meters,
             }
         )
-    return {"accounts": accounts}
+    return {
+        "accounts": accounts,
+        "settings": dict(hass.data.get(PANEL_SETTINGS_DATA, DEFAULT_PANEL_SETTINGS)),
+    }
 
 
 @websocket_api.websocket_command({vol.Required("type"): "brunata_online/panel_data"})
@@ -123,10 +166,32 @@ async def websocket_panel_data(
     connection.send_result(msg["id"], build_panel_payload(hass))
 
 
-@callback
-def async_register_websocket(hass: HomeAssistant) -> None:
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "brunata_online/panel_settings/update",
+        vol.Required("settings"): dict,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_update_panel_settings(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Validate and persist shared panel settings."""
+    settings = normalize_panel_settings(msg["settings"])
+    store: Store = hass.data[PANEL_SETTINGS_STORE]
+    await store.async_save(settings)
+    hass.data[PANEL_SETTINGS_DATA] = settings
+    connection.send_result(msg["id"], {"settings": settings})
+
+
+async def async_register_websocket(hass: HomeAssistant) -> None:
     """Register panel commands once per Home Assistant process."""
     if hass.data.get(PANEL_WS_REGISTERED):
         return
+    store = Store(hass, 1, PANEL_SETTINGS_STORAGE_KEY)
+    hass.data[PANEL_SETTINGS_STORE] = store
+    hass.data[PANEL_SETTINGS_DATA] = normalize_panel_settings(await store.async_load())
     websocket_api.async_register_command(hass, websocket_panel_data)
+    websocket_api.async_register_command(hass, websocket_update_panel_settings)
     hass.data[PANEL_WS_REGISTERED] = True

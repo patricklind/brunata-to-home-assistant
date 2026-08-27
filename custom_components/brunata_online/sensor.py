@@ -19,6 +19,7 @@ from homeassistant.util import dt as dt_util
 
 from . import BrunataDataCoordinator
 from .const import DOMAIN
+from .identity import aggregate_device_identifier, aggregate_unique_id
 
 WATER_CONSUMPTION_WINDOWS_DAYS: tuple[int, ...] = (1, 7, 14, 30)
 HEATING_CONSUMPTION_WINDOWS_DAYS: tuple[int, ...] = (30,)
@@ -810,6 +811,7 @@ class _BrunataAggregateWaterBase(
         super().__init__(coordinator)
         self._scope_key = scope_key
         self._mediums = mediums
+        self._entry_id = coordinator.config_entry.entry_id
 
     @property
     def _rows(self) -> list[dict[str, Any]]:
@@ -830,7 +832,7 @@ class _BrunataAggregateWaterBase(
     @property
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
-            identifiers={(DOMAIN, f"aggregate_{self._scope_key}")},
+            identifiers={aggregate_device_identifier(self._entry_id, self._scope_key)},
             manufacturer="Brunata",
             model="Virtual aggregate",
             name=f"Brunata {self._scope_label} aggregate",
@@ -859,7 +861,7 @@ class BrunataAggregateWaterTotalSensor(_BrunataAggregateWaterBase):
         mediums: set[str],
     ) -> None:
         super().__init__(coordinator, scope_key, mediums)
-        self._attr_unique_id = f"{DOMAIN}_{scope_key}"
+        self._attr_unique_id = aggregate_unique_id(self._entry_id, scope_key)
         self._attr_name = f"Brunata {self._scope_label} total"
 
     @property
@@ -887,7 +889,9 @@ class BrunataAggregateWaterLastDaysSensor(_BrunataAggregateWaterBase):
     ) -> None:
         super().__init__(coordinator, scope_key, mediums)
         self._window_days = window_days
-        self._attr_unique_id = f"{DOMAIN}_{scope_key}_last_{window_days}_days"
+        self._attr_unique_id = aggregate_unique_id(
+            self._entry_id, scope_key, window_days
+        )
         self._attr_name = (
             f"Brunata {self._scope_label} last {_window_label(window_days)}"
         )

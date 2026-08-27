@@ -12,6 +12,12 @@ ROOT = Path(__file__).parents[1]
 
 voluptuous = types.ModuleType("voluptuous")
 voluptuous.Required = lambda value: value
+voluptuous.Optional = lambda value, **kwargs: value
+voluptuous.All = lambda *values: values[0]
+voluptuous.Coerce = lambda value: value
+voluptuous.In = lambda value: value
+voluptuous.Match = lambda value: value
+voluptuous.Range = lambda **kwargs: kwargs
 sys.modules.setdefault("voluptuous", voluptuous)
 
 websocket_api = types.ModuleType("homeassistant.components.websocket_api")
@@ -33,6 +39,10 @@ core = sys.modules.get("homeassistant.core", types.ModuleType("homeassistant.cor
 core.HomeAssistant = object
 core.callback = lambda func: func
 sys.modules["homeassistant.core"] = core
+
+storage = types.ModuleType("homeassistant.helpers.storage")
+storage.Store = object
+sys.modules["homeassistant.helpers.storage"] = storage
 
 package = sys.modules.get("custom_components", types.ModuleType("custom_components"))
 package.__path__ = [str(ROOT / "custom_components")]
@@ -97,6 +107,107 @@ class PanelPayloadTests(unittest.TestCase):
 
     def test_websocket_payload_requires_admin(self) -> None:
         self.assertIs(panel.websocket_panel_data.requires_admin, True)
+
+    def test_panel_payload_contains_server_settings(self) -> None:
+        hass = types.SimpleNamespace(
+            data={
+                "brunata_online": {},
+                panel.PANEL_SETTINGS_DATA: {
+                    "period": 7,
+                    "precision": 1,
+                    "currency": "DKK",
+                    "waterPrice": 12.5,
+                    "heatingPrice": 0.8,
+                },
+            }
+        )
+        self.assertEqual(
+            build := panel.build_panel_payload(hass),
+            {
+                "accounts": [],
+                "settings": hass.data[panel.PANEL_SETTINGS_DATA],
+            },
+        )
+        self.assertEqual(build["settings"]["currency"], "DKK")
+
+    def test_normalizes_untrusted_persisted_settings(self) -> None:
+        self.assertEqual(
+            panel.normalize_panel_settings(
+                {
+                    "period": 9,
+                    "precision": 99,
+                    "currency": "dkk",
+                    "waterPrice": "12,50",
+                    "heatingPrice": -4,
+                }
+            ),
+            {
+                "period": 30,
+                "precision": 3,
+                "currency": "DKK",
+                "waterPrice": 12.5,
+                "heatingPrice": 0.0,
+            },
+        )
+        self.assertEqual(
+            panel.normalize_panel_settings(
+                {
+                    "period": True,
+                    "precision": float("inf"),
+                    "waterPrice": "NaN",
+                    "heatingPrice": "Infinity",
+                }
+            ),
+            panel.DEFAULT_PANEL_SETTINGS,
+        )
+
+    def test_settings_update_websocket_requires_admin(self) -> None:
+        self.assertIs(panel.websocket_update_panel_settings.requires_admin, True)
+
+
+class PanelSettingsUpdateTests(unittest.IsolatedAsyncioTestCase):
+    async def test_settings_update_is_normalized_persisted_and_returned(self) -> None:
+        class FakeStore:
+            saved = None
+
+            async def async_save(self, value):
+                self.saved = value
+
+        class FakeConnection:
+            result = None
+
+            def send_result(self, message_id, value):
+                self.result = (message_id, value)
+
+        store = FakeStore()
+        connection = FakeConnection()
+        hass = types.SimpleNamespace(data={panel.PANEL_SETTINGS_STORE: store})
+
+        await panel.websocket_update_panel_settings(
+            hass,
+            connection,
+            {
+                "id": 7,
+                "settings": {
+                    "period": "7",
+                    "precision": "1",
+                    "currency": "dkk",
+                    "waterPrice": "10,25",
+                    "heatingPrice": "-1",
+                },
+            },
+        )
+
+        expected = {
+            "period": 7,
+            "precision": 1,
+            "currency": "DKK",
+            "waterPrice": 10.25,
+            "heatingPrice": 0.0,
+        }
+        self.assertEqual(store.saved, expected)
+        self.assertEqual(hass.data[panel.PANEL_SETTINGS_DATA], expected)
+        self.assertEqual(connection.result, (7, {"settings": expected}))
 
 
 if __name__ == "__main__":

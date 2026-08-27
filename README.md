@@ -21,6 +21,9 @@
 
 `brunata_online` is a Home Assistant custom integration that authenticates against Brunata Online and creates water/heating meter sensors from `online.brunata.com`.
 
+Current integration release: **v1.0.33**. The integration declares Home
+Assistant **2024.6.0 or newer** as its minimum supported version.
+
 ---
 
 > [!IMPORTANT]
@@ -37,6 +40,7 @@
 flowchart LR
     B["Brunata Online<br/>online.brunata.com"] --> I["brunata_online integration"]
     I --> HA["Home Assistant entities"]
+    I --> P["Administrator sidebar panel"]
     HA --> E["Energy/Water dashboard"]
 ```
 
@@ -66,6 +70,8 @@ flowchart TD
     C --> D["Get auth code redirect"]
     D --> E["Token exchange"]
     E --> F["Bearer token for API requests"]
+    F --> G{"Credentials rejected later?"}
+    G -->|Yes| H["Home Assistant reauthentication flow"]
 ```
 
 ---
@@ -98,6 +104,9 @@ flowchart LR
 - Aggregate water rolling sensors:
   - `... last 1 day`, `... last 7 days`, `... last 14 days`, `... last 30 days`
 - Includes serial number and meter metadata in sensor attributes
+- English-first panel text with Home Assistant localization and support for all
+  64 languages currently exposed by Home Assistant
+- Right-to-left layout for Arabic, Persian, Hebrew, and Urdu
 
 > [!NOTE]
 > Sync direction is strictly one-way: Brunata -> Home Assistant.
@@ -128,8 +137,46 @@ flowchart LR
 4. Enter Brunata username/email and password.
 
 The **Brunata** sidebar panel is shown to Home Assistant administrators. Its
-period, precision, currency, and unit-price settings are stored locally in the
-current browser; they do not change sensor data or Brunata readings.
+period, precision, currency, and unit-price settings are stored by Home
+Assistant and shared across browsers and devices; they do not change sensor
+data or Brunata readings.
+
+### Sidebar panel
+
+The panel contains four views:
+
+- **Overview** — period consumption grouped by compatible medium and unit,
+  recent readings, and compact history charts.
+- **Consumption** — one chart and period delta per meter.
+- **Devices** — meter placement, medium, number, current value, and unit.
+- **Settings** — Home Assistant-synchronized display and price preferences.
+
+Panel data include private meter information, so both the sidebar route and its
+WebSocket data command require a Home Assistant administrator account.
+
+### Panel settings
+
+| Setting           | Supported values           | Default | Notes                                              |
+| ----------------- | -------------------------- | ------- | -------------------------------------------------- |
+| Period            | 7 or 30 days               | 30 days | Uses calendar dates, not a fixed number of samples |
+| Display precision | 0–3 decimals               | 2       | Applies only to panel formatting                   |
+| Currency          | Three-letter code          | EUR     | Used for estimated costs                           |
+| Water price       | Non-negative price per m³  | 0       | Applies to cold and hot water measured in m³       |
+| Heating price     | Non-negative price per kWh | 0       | Never applied to radiator allocation units         |
+
+Settings are validated and stored in Home Assistant's integration storage.
+Because the panel and settings command are administrator-only, an administrator
+must save changes. Existing browser-local settings from earlier releases are
+migrated once when the panel first loads. A price of `0` hides the corresponding
+cost estimate. Panel estimates are informational and must not be used as billing
+data.
+
+### Language behavior
+
+The panel first asks Home Assistant for its own translated UI strings. English
+is the canonical fallback when Home Assistant does not expose a suitable key.
+Medium names are included for every language currently supported by Home
+Assistant, and regional locales fall back to their base language where needed.
 
 ---
 
@@ -157,6 +204,9 @@ Home Assistant must be able to reach:
 
 - `https://online.brunata.com`
 
+The integration uses outbound HTTPS only. It does not open an inbound port or
+accept writes from Brunata.
+
 > [!CAUTION]
 > If logins fail with timeout from Home Assistant but work from browser, verify host networking/MTU.
 > MTU `1500` has been required in multiple environments.
@@ -175,6 +225,16 @@ Environment variables (from `.env`):
 
 - `BRUNATA_USERNAME`
 - `BRUNATA_PASSWORD`
+
+Example `.env` contents:
+
+```dotenv
+BRUNATA_USERNAME=person@example.com
+BRUNATA_PASSWORD=replace-with-your-password
+```
+
+Do not commit `.env` or files under `output/`; both may contain private account
+or meter information.
 
 Output files:
 
@@ -196,19 +256,26 @@ Output files:
    - Usually network/timeouts from HA host, not wrong credentials.
    - Check Home Assistant logs for `TimeoutError` / `ReadTimeout`.
 
-3. **No history/last N days values**
+3. **Home Assistant asks you to reauthenticate**
+
+   - Brunata rejected the stored credentials during an update.
+   - Open the repair notification, enter the current password, and submit it.
+   - The existing config entry, entities, dashboards, and history are preserved;
+     only the password is replaced and the integration is reloaded.
+
+4. **No history/last N days values**
 
    - Integration needs sufficient daily points.
    - First refresh may expose empty `last N days` until history cache is filled.
 
-4. **A water transmitter was replaced**
+5. **A water transmitter was replaced**
 
    - Brunata may stop returning a current value for the old transmitter while
      the new transmitter reports only consumption since the exchange.
    - The total sensors retain the old transmitter's latest historical reading
      as the baseline and add the replacement transmitter's reading.
 
-5. **A meter shows an old or unexpectedly low total**
+6. **A meter shows an old or unexpectedly low total**
 
    - Open `Settings -> Devices & services -> Brunata Online`.
    - Choose the three-dot menu and **Download diagnostics**.
@@ -216,6 +283,18 @@ Output files:
    - Credentials, consumer details, placement, serial numbers, and raw meter IDs
      are excluded. Reading values and dates remain because they are required to
      diagnose date selection and replaced transmitters.
+
+7. **The Brunata sidebar is missing**
+
+   - The panel is intentionally visible only to Home Assistant administrators.
+   - Confirm that the integration is loaded, then restart Home Assistant after
+     installing or upgrading the custom integration.
+
+8. **Costs are not shown**
+
+   - Open **Brunata → Settings** and enter a non-zero unit price.
+   - Water costs require an `m³` meter and heating costs require a `kWh` meter.
+     Radiator allocation units cannot be converted to money by this integration.
 
 ---
 
@@ -252,9 +331,53 @@ The first daily/monthly Utility Meter cycle is partial. Use the official
 `..._total` sensors as Utility Meter sources; do not use the distributed
 estimate or rolling `last N days` sensors for billing/statistics.
 
+The example's daily limit notification is optional. Remove the `input_number`,
+`binary_sensor`, and `automation` sections if you only want utility meters and
+hot-water share sensors.
+
+---
+
+## Development and Verification
+
+Install the standalone script dependencies:
+
+```bash
+python -m pip install --requirement requirements.txt
+```
+
+Run the repository checks:
+
+```bash
+python -m unittest discover -s tests -v
+node --test tests/*.test.mjs
+python -m flake8 custom_components tests fetch_brunata_data.py
+python -m black --check custom_components tests fetch_brunata_data.py
+python -m compileall -q custom_components tests fetch_brunata_data.py
+```
+
+The CI workflow additionally runs pre-commit, HACS validation, and Hassfest.
+Tests use stubs and fixtures; they do not contact Brunata or require a Home
+Assistant installation.
+
+### Known limitations
+
+- Brunata Online is an undocumented external service and may change without
+  notice.
+- A complete live verification requires a real Brunata account and Home
+  Assistant installation.
+- Panel settings are global to the Home Assistant instance rather than
+  configurable separately for each Brunata account or HA user.
+- Aggregate water identities are namespaced per Brunata config entry. Existing
+  aggregate entity registry entries are migrated in place during upgrade so
+  their entity IDs and recorder history are retained.
+- Cost values are estimates derived from user-entered prices and meter deltas.
+
 ---
 
 ## Maintainer: Tag + Release
+
+Before tagging, ensure the working tree is clean and all local checks above
+pass. Use a new version; published Git tags must never be moved or reused.
 
 1. Bump version in:
    - `custom_components/brunata_online/manifest.json`
@@ -268,6 +391,10 @@ The workflow runs tests, formatting/static checks, HACS validation, and Hassfest
 before publishing. It also rejects a tag that does not match the integration
 manifest version, preventing the Releases and Tags pages from advertising
 different versions.
+
+After pushing the tag, verify that both the branch workflow and **Release from
+tag** workflow are green and that the GitHub release is public. If a gate fails,
+fix the problem and publish a new patch version instead of replacing the tag.
 
 > [!CAUTION]
 > If tags are pushed from HTTPS token without `workflow` scope, workflow-file changes may be rejected.

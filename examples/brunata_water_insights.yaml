@@ -1,5 +1,8 @@
 # Optional Home Assistant package for Brunata consumption insights.
 # Set brunata_daily_water_limit to 0 to disable the alert.
+# This example expects the integration's default aggregate entity IDs. If those
+# entities were renamed, update every `source:` value before restarting HA.
+# The first utility-meter cycle is partial and should not be used for billing.
 
 input_number:
   brunata_daily_water_limit:

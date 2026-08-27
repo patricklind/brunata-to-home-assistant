@@ -3,38 +3,50 @@ name: Issue
 about: Create a report to help us improve
 ---
 
-<!-- Before you open a new issue, search through the existing issues to see if others have had the same problem.
+<!-- Before opening an issue, search existing issues and update to the latest release.
 
 Issues not containing the minimum requirements will be closed:
 
 - Issues without a description (using the header is not good enough) will be closed.
 - Issues without debug logging will be closed.
-- Issues without configuration will be closed
+- Never include passwords, tokens, cookies, or unredacted personal information.
 
 -->
 
-## Version of the custom_component
+## Versions
 
-<!-- If you are not using the newest version, download and try that before opening an issue
-If you are unsure about the version check the const.py file.
--->
+- Brunata Online integration:
+- Home Assistant:
+- Installation type (HA OS, Container, Core, Supervised):
 
-## Configuration
+<!-- The integration version is in Settings → Devices & services or manifest.json. -->
 
-```yaml
-Add your logs here.
-```
+## Affected meter and dates
+
+- Meter type/medium:
+- Unit:
+- Relevant dates:
+- Expected value:
+- Actual value:
+
+## Steps to reproduce
+
+1.
+2.
+3.
+
+## Diagnostics
+
+<!-- Download from Settings → Devices & services → Brunata Online → three-dot menu → Download diagnostics. Attach the JSON file; do not paste credentials. -->
 
 ## Describe the bug
 
-A clear and concise description of what the bug is.
+Describe what happened and what you expected instead.
 
 ## Debug log
 
-<!-- To enable debug logs check this https://www.home-assistant.io/components/logger/ -->
+<!-- Enable debug logging in Home Assistant and reproduce the problem. Remove unrelated or private data. -->
 
 ```text
-
 Add your logs here.
-
 ```

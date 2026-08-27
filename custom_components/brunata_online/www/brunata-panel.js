@@ -20,7 +20,7 @@ const MEDIA = {
   other: ["mdi:gauge", "#768390"],
 };
 
-const SETTINGS_KEY = "brunata-online-panel-settings-v1";
+const LEGACY_SETTINGS_KEY = "brunata-online-panel-settings-v1";
 
 const escapeHtml = (value) =>
   String(value ?? "").replace(
@@ -39,12 +39,13 @@ class BrunataOnlinePanel extends HTMLElement {
     this._error = null;
     this._tab = "overview";
     this._account = 0;
+    this._settings = normalizeSettings();
+    this._settingsFeedback = null;
     try {
-      this._settings = normalizeSettings(
-        JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")
-      );
+      const legacy = localStorage.getItem(LEGACY_SETTINGS_KEY);
+      this._legacySettings = legacy ? normalizeSettings(JSON.parse(legacy)) : null;
     } catch (_) {
-      this._settings = normalizeSettings();
+      this._legacySettings = null;
     }
   }
 
@@ -72,6 +73,8 @@ class BrunataOnlinePanel extends HTMLElement {
       this._data = await this._hass.callWS({
         type: "brunata_online/panel_data",
       });
+      this._settings = normalizeSettings(this._data?.settings);
+      await this._migrateLegacySettings();
       this._error = null;
     } catch (error) {
       this._error = error?.message || String(error);
@@ -79,6 +82,36 @@ class BrunataOnlinePanel extends HTMLElement {
       this._loading = false;
       this._render();
     }
+  }
+
+  async _migrateLegacySettings() {
+    if (!this._legacySettings) return;
+    const defaults = normalizeSettings();
+    const serverUsesDefaults = Object.keys(defaults).every(
+      (key) => this._settings[key] === defaults[key]
+    );
+    if (serverUsesDefaults) {
+      try {
+        await this._saveSettings(this._legacySettings);
+      } catch (_) {
+        return;
+      }
+    }
+    try {
+      localStorage.removeItem(LEGACY_SETTINGS_KEY);
+    } catch (_) {
+      // Storage may be unavailable in hardened browser contexts.
+    }
+    this._legacySettings = null;
+  }
+
+  async _saveSettings(settings) {
+    const result = await this._hass.callWS({
+      type: "brunata_online/panel_settings/update",
+      settings,
+    });
+    this._settings = normalizeSettings(result?.settings);
+    if (this._data) this._data.settings = this._settings;
   }
 
   _meters() {
@@ -275,9 +308,15 @@ class BrunataOnlinePanel extends HTMLElement {
     )} / kWh</span><input name="heatingPrice" type="number" min="0" step="0.01" value="${
       s.heatingPrice
     }"></label>
-      <button class="save" type="submit">${this._t(
+      <button class="save" type="submit" ${this._savingSettings ? "disabled" : ""}>${this._t(
         "save"
-      )}</button></form></section>`;
+      )}</button>${
+        this._settingsFeedback
+          ? `<p class="settings-feedback ${this._settingsFeedback.type}" role="${
+              this._settingsFeedback.type === "error" ? "alert" : "status"
+            }">${escapeHtml(this._settingsFeedback.message)}</p>`
+          : ""
+      }</form></section>`;
   }
 
   _empty() {
@@ -368,18 +407,37 @@ class BrunataOnlinePanel extends HTMLElement {
       });
     this.shadowRoot
       .querySelector("form")
-      ?.addEventListener("submit", (event) => {
+      ?.addEventListener("submit", async (event) => {
         event.preventDefault();
         const values = Object.fromEntries(new FormData(event.target));
-        this._settings = normalizeSettings(values);
-        localStorage.setItem(SETTINGS_KEY, JSON.stringify(this._settings));
+        this._savingSettings = true;
+        this._settingsFeedback = null;
         this._render();
+        try {
+          await this._saveSettings(normalizeSettings(values));
+          this._settingsFeedback = {
+            type: "success",
+            message: this._t("updated"),
+          };
+        } catch (error) {
+          this._settingsFeedback = {
+            type: "error",
+            message:
+              this._t("unavailable") +
+              ": " +
+              (error?.message || String(error)),
+          };
+        } finally {
+          this._savingSettings = false;
+          this._render();
+        }
       });
   }
 }
 
 const STYLES = `
 :host{--red:#e32636;--blue:#005ca9;display:block;background:var(--primary-background-color);color:var(--primary-text-color);min-height:100vh;font-family:var(--paper-font-body1_-_font-family,system-ui,sans-serif)}*{box-sizing:border-box}.page{max-width:1180px;margin:auto;padding:28px 24px 60px}.hero{display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{display:flex;align-items:center;gap:14px}.brand img{width:48px;height:48px;border-radius:12px}.brand h1{font-size:1.55rem;margin:0}.brand p,.section-title p{color:var(--secondary-text-color);margin:3px 0 0}.actions{display:flex;gap:9px}.actions select,.refresh{border:1px solid var(--divider-color);background:var(--card-background-color);color:inherit;border-radius:10px;padding:9px 12px}.refresh{display:grid;place-items:center;cursor:pointer}nav{display:flex;gap:24px;border-bottom:1px solid var(--divider-color);margin:28px 0 20px;overflow-x:auto}nav button{border:0;border-bottom:3px solid transparent;background:none;color:var(--secondary-text-color);font:inherit;font-weight:600;padding:10px 2px;cursor:pointer;white-space:nowrap}nav button.active{color:var(--blue);border-color:var(--red)}.status{display:flex;align-items:center;gap:7px;color:var(--secondary-text-color);font-size:.82rem;margin-bottom:16px}.status span:last-child{margin-inline-start:auto}.dot{width:8px;height:8px;border-radius:50%;background:#999}.dot.ok{background:#22a06b}.dot.bad{background:#e34b4b}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:18px}.metric,.card,.chart,.meter{background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,.04)}.metric{padding:18px;border-top:3px solid var(--accent)}.metric-head{display:flex;align-items:center;gap:9px;font-weight:600}.icon{color:var(--accent)}.metric>strong{display:block;font-size:1.75rem;margin-top:18px}.metric>small,.chart small,.meter small,.reading small{display:block;color:var(--secondary-text-color);margin-top:3px}.spark{width:100%;height:62px;margin-top:14px;overflow:visible}.no-chart{height:62px;display:grid;place-items:center;color:var(--secondary-text-color);font-size:.8rem}.card{padding:20px;margin-bottom:18px}.section-title{display:flex;justify-content:space-between;margin-bottom:14px}.section-title h2{font-size:1.05rem;margin:0}.reading{display:flex;align-items:center;gap:12px;padding:13px 4px;border-top:1px solid var(--divider-color)}.reading:first-child{border-top:0}.reading-icon{width:34px;height:34px;display:grid;place-items:center;background:var(--secondary-background-color);border-radius:10px}.reading-name{flex:1}.reading>strong,.chart header>strong,.meter>strong{font-variant-numeric:tabular-nums}.charts,.meter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.chart{padding:16px}.chart header{display:flex;justify-content:space-between;gap:12px}.meter{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:15px}.meter-icon{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);padding:9px;border-radius:11px}.settings-card{max-width:680px}.settings-card form{display:grid;grid-template-columns:1fr 1fr;gap:16px}.settings-card label{display:flex;flex-direction:column;gap:7px;color:var(--secondary-text-color);font-size:.86rem}.settings-card input,.settings-card select{width:100%;border:1px solid var(--divider-color);border-radius:9px;background:var(--secondary-background-color);color:var(--primary-text-color);font:inherit;padding:10px}.save{grid-column:1/-1;justify-self:start;border:0;border-radius:9px;background:var(--primary-color,var(--blue));color:var(--text-primary-color,#fff);font:inherit;font-weight:600;padding:10px 22px;cursor:pointer}.empty,.loading,.error{grid-column:1/-1;min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--secondary-text-color)}.error{color:var(--error-color,#db4437)}@media(max-width:760px){.page{padding:18px 12px 40px}.metrics,.charts,.meter-grid,.settings-card form{grid-template-columns:1fr}.hero{align-items:flex-start}.brand p{display:none}.metric>strong{font-size:1.45rem}nav{gap:18px}.reading{align-items:flex-start}.reading>strong{margin-inline-start:auto;text-align:end}}
+.save:disabled{cursor:wait;opacity:.65}.settings-feedback{grid-column:1/-1;margin:0;color:var(--success-color,#22a06b)}.settings-feedback.error{color:var(--error-color,#db4437)}
 `;
 
 customElements.define("brunata-online-panel", BrunataOnlinePanel);
