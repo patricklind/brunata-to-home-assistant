@@ -1,8 +1,8 @@
 """Fixtures for tests running inside a real Home Assistant core."""
 
-pytest_plugins = "pytest_homeassistant_custom_component"
-
 import pytest
+
+pytest_plugins = "pytest_homeassistant_custom_component"
 
 
 @pytest.fixture(autouse=True)

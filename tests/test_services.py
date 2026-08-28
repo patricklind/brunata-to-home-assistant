@@ -28,7 +28,8 @@ sys.modules["homeassistant.exceptions"] = exceptions
 package = sys.modules.get("custom_components", types.ModuleType("custom_components"))
 package.__path__ = [str(ROOT / "custom_components")]
 integration = sys.modules.get(
-    "custom_components.brunata_online", types.ModuleType("custom_components.brunata_online")
+    "custom_components.brunata_online",
+    types.ModuleType("custom_components.brunata_online"),
 )
 integration.__path__ = [str(ROOT / "custom_components" / "brunata_online")]
 sys.modules["custom_components"] = package

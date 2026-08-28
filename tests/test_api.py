@@ -231,6 +231,30 @@ class CurrentMeterSelectionTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(rows[0]["reading"]["value"], 100)
 
+    async def test_date_candidates_are_fetched_concurrently(self) -> None:
+        client = api.BrunataOnlineClient("user", "password", None)
+        client._build_date_candidates = lambda: [
+            "2026-08-01",
+            "2026-08-02",
+            "2026-08-03",
+            "2026-08-04",
+        ]
+        active_requests = 0
+        maximum_active_requests = 0
+
+        async def fake_get_json(path, params=None, **kwargs):
+            nonlocal active_requests, maximum_active_requests
+            active_requests += 1
+            maximum_active_requests = max(maximum_active_requests, active_requests)
+            await asyncio.sleep(0)
+            active_requests -= 1
+            return []
+
+        client._api_get_json = fake_get_json
+        await client._get_best_meter_rows()
+
+        self.assertGreater(maximum_active_requests, 1)
+
 
 class DebugClientMeterSelectionTests(unittest.TestCase):
     """Keep the standalone export client consistent with the integration."""

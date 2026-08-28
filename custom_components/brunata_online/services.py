@@ -40,9 +40,7 @@ def _history_for_row(data: dict[str, Any], row: dict[str, Any]) -> list[dict[str
     return [point for point in points if isinstance(point, dict)]
 
 
-def build_report_response(
-    coordinators: list[Any], period: str
-) -> dict[str, Any]:
+def build_report_response(coordinators: list[Any], period: str) -> dict[str, Any]:
     """Build privacy-conscious report data for an action response."""
     accounts: list[dict[str, Any]] = []
     for coordinator in coordinators:
@@ -56,9 +54,7 @@ def build_report_response(
                 {
                     "name": str(meter.get("placement") or "Meter"),
                     "unit_code": str(meter.get("unit") or ""),
-                    **consumption_report(
-                        _history_for_row(data, row), period=period
-                    ),
+                    **consumption_report(_history_for_row(data, row), period=period),
                 }
             )
         accounts.append(
@@ -136,9 +132,7 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         generate_report,
         schema={
             vol.Optional("entry_id"): str,
-            vol.Required("period", default="week"): vol.In(
-                {"week", "month", "year"}
-            ),
+            vol.Required("period", default="week"): vol.In({"week", "month", "year"}),
         },
         supports_response=SupportsResponse.ONLY,
     )

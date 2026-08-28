@@ -42,12 +42,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: BrunataConfigEntry) -> b
     )
 
     coordinator = BrunataDataCoordinator(hass, client, entry)
-    await coordinator.async_refresh()
-    if not coordinator.last_update_success:
-        _LOGGER.warning(
-            "Initial Brunata refresh failed during setup; integration will retry in "
-            "background."
-        )
+    await coordinator.async_config_entry_first_refresh()
 
     hass.data[DOMAIN][entry.entry_id] = coordinator
 

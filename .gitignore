@@ -12,3 +12,4 @@ docs/json
 output/
 graphify-out/
 .playwright-mcp/
+.playwright-cli/

@@ -54,6 +54,7 @@ AUTH_MAX_ATTEMPTS = 3
 HISTORY_DAYS_BACK = 62
 HISTORY_REFRESH_INTERVAL = timedelta(hours=12)
 MAX_HISTORY_PARALLEL_REQUESTS = 4
+MAX_METER_PARALLEL_REQUESTS = 4
 
 
 class BrunataAuthError(Exception):
@@ -166,71 +167,87 @@ class BrunataOnlineClient:
         best_date: str | None = None
         best_rows_by_meter: dict[str, tuple[tuple[int, str, str], dict[str, Any]]] = {}
 
-        for startdate in candidates:
+        semaphore = asyncio.Semaphore(MAX_METER_PARALLEL_REQUESTS)
+
+        async def fetch_candidate(
+            startdate: str,
+        ) -> tuple[str, Any, Exception | None]:
             try:
-                rows = await self._api_get_json(
-                    "/consumer/meters",
-                    params={"startdate": startdate},
-                    timeout=METER_REQUEST_TIMEOUT,
-                    max_attempts=1,
-                )
-                if not isinstance(rows, list):
-                    attempts.append(
-                        {
-                            "startdate": startdate,
-                            "status": "ok_non_list",
-                            "rows": 0,
-                            "non_null": 0,
-                        }
+                async with semaphore:
+                    rows = await self._api_get_json(
+                        "/consumer/meters",
+                        params={"startdate": startdate},
+                        timeout=METER_REQUEST_TIMEOUT,
+                        max_attempts=1,
                     )
-                    continue
-
-                non_null = self._count_non_null_readings(rows)
-                row_count = len(rows)
-                attempts.append(
-                    {
-                        "startdate": startdate,
-                        "status": "ok",
-                        "rows": row_count,
-                        "non_null": non_null,
-                    }
-                )
-
-                # Brunata returns the first reading on/after ``startdate``.
-                # Different meter types report on different schedules, so a
-                # single response date can contain a fresh hot-water value but
-                # an older (or empty) cold-water value. Select the newest usable
-                # row independently for every meter instead of choosing one
-                # whole response for all meters.
-                best_date = max(best_date or startdate, startdate)
-                for row in rows:
-                    if not isinstance(row, dict):
-                        continue
-                    meter_key = self._meter_history_key(row)
-                    if not meter_key:
-                        continue
-                    reading = row.get("reading")
-                    value_is_valid = int(
-                        isinstance(reading, dict)
-                        and _to_float(reading.get("value")) is not None
-                    )
-                    reading_date = (
-                        str(reading.get("readingDate") or "")
-                        if isinstance(reading, dict)
-                        else ""
-                    )
-                    score = (value_is_valid, reading_date, startdate)
-                    existing = best_rows_by_meter.get(meter_key)
-                    if existing is None or score > existing[0]:
-                        best_rows_by_meter[meter_key] = (score, row)
+                return startdate, rows, None
             except Exception as err:  # pylint: disable=broad-except
+                return startdate, None, err
+
+        results = await asyncio.gather(
+            *(fetch_candidate(startdate) for startdate in candidates)
+        )
+
+        for startdate, rows, error in results:
+            if error is not None:
                 attempts.append(
                     {
                         "startdate": startdate,
                         "status": "error",
-                        "error": str(err),
+                        "error": str(error),
                     }
                 )
+                continue
+
+            if not isinstance(rows, list):
+                attempts.append(
+                    {
+                        "startdate": startdate,
+                        "status": "ok_non_list",
+                        "rows": 0,
+                        "non_null": 0,
+                    }
+                )
+                continue
+
+            non_null = self._count_non_null_readings(rows)
+            row_count = len(rows)
+            attempts.append(
+                {
+                    "startdate": startdate,
+                    "status": "ok",
+                    "rows": row_count,
+                    "non_null": non_null,
+                }
+            )
+
+            # Brunata returns the first reading on/after ``startdate``.
+            # Different meter types report on different schedules, so a
+            # single response date can contain a fresh hot-water value but
+            # an older (or empty) cold-water value. Select the newest usable
+            # row independently for every meter instead of choosing one
+            # whole response for all meters.
+            best_date = max(best_date or startdate, startdate)
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                meter_key = self._meter_history_key(row)
+                if not meter_key:
+                    continue
+                reading = row.get("reading")
+                value_is_valid = int(
+                    isinstance(reading, dict)
+                    and _to_float(reading.get("value")) is not None
+                )
+                reading_date = (
+                    str(reading.get("readingDate") or "")
+                    if isinstance(reading, dict)
+                    else ""
+                )
+                score = (value_is_valid, reading_date, startdate)
+                existing = best_rows_by_meter.get(meter_key)
+                if existing is None or score > existing[0]:
+                    best_rows_by_meter[meter_key] = (score, row)
 
         if best_date:
             self._best_startdate = best_date

@@ -5,6 +5,8 @@ releases use `vX.Y.Z-beta.N` and are published as GitHub prereleases.
 
 ## Unreleased
 
+## 1.0.38 - 2026-08-28
+
 ### Added
 
 - Weekly, monthly, and yearly comparison reports with explicit insufficient-history states.
@@ -19,6 +21,14 @@ releases use `vX.Y.Z-beta.N` and are published as GitHub prereleases.
 ### Changed
 
 - GitHub prerelease tags no longer replace the latest stable release.
+- Reduced startup latency by fetching bounded meter-date candidates concurrently.
+- Initial coordinator failures now use Home Assistant's standard retry lifecycle.
+
+### Fixed
+
+- Prevented long sequential meter discovery from causing config-entry setup to be
+  cancelled before Brunata Online responded.
+- Removed accidentally committed Playwright runtime artifacts.
 
 ## 1.0.36 - 2026-08-28
 
