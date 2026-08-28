@@ -745,6 +745,8 @@ class BrunataLastDaysConsumptionSensor(BrunataMeterSensor):
 
     @property
     def state_class(self) -> SensorStateClass | None:
+        if _is_heating_medium(self._meter_medium) and self._native_unit == "kWh":
+            return SensorStateClass.TOTAL
         return SensorStateClass.MEASUREMENT
 
     @property

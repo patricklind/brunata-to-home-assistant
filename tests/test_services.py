@@ -14,6 +14,7 @@ vol = sys.modules.get("voluptuous", types.ModuleType("voluptuous"))
 vol.Optional = getattr(vol, "Optional", lambda value, **kwargs: value)
 vol.Required = getattr(vol, "Required", lambda value, **kwargs: value)
 vol.In = getattr(vol, "In", lambda value: value)
+vol.Schema = getattr(vol, "Schema", lambda value: value)
 sys.modules["voluptuous"] = vol
 
 core = sys.modules.get("homeassistant.core", types.ModuleType("homeassistant.core"))

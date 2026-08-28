@@ -41,9 +41,15 @@ async def test_entry_creates_energy_compatible_entities_and_actions(hass) -> Non
         "meter_history_meta": {"successful_days": 3, "failed_days": 0},
     }
 
-    with patch(
-        "custom_components.brunata_online.api.BrunataOnlineClient.async_fetch_data",
-        return_value=payload,
+    with (
+        patch(
+            "custom_components.brunata_online.api.BrunataOnlineClient.async_fetch_data",
+            return_value=payload,
+        ),
+        patch(
+            "homeassistant.components.http.HomeAssistantHTTP.start",
+            return_value=None,
+        ),
     ):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
@@ -67,3 +73,4 @@ async def test_entry_creates_energy_compatible_entities_and_actions(hass) -> Non
         return_response=True,
     )
     assert response["accounts"][0]["meters"][0]["current"] == 12.0
+    await hass.async_stop()

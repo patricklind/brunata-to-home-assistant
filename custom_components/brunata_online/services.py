@@ -124,16 +124,20 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         await require_admin(call)
         return build_csv_response(_coordinators(hass, call.data.get("entry_id")))
 
-    entry_schema = {vol.Optional("entry_id"): str}
+    entry_schema = vol.Schema({vol.Optional("entry_id"): str})
     hass.services.async_register(DOMAIN, SERVICE_REFRESH, refresh, schema=entry_schema)
     hass.services.async_register(
         DOMAIN,
         SERVICE_GENERATE_REPORT,
         generate_report,
-        schema={
-            vol.Optional("entry_id"): str,
-            vol.Required("period", default="week"): vol.In({"week", "month", "year"}),
-        },
+        schema=vol.Schema(
+            {
+                vol.Optional("entry_id"): str,
+                vol.Required("period", default="week"): vol.In(
+                    {"week", "month", "year"}
+                ),
+            }
+        ),
         supports_response=SupportsResponse.ONLY,
     )
     hass.services.async_register(
