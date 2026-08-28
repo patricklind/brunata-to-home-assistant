@@ -28,6 +28,7 @@ releases use `vX.Y.Z-beta.N` and are published as GitHub prereleases.
 
 - Prevented long sequential meter discovery from causing config-entry setup to be
   cancelled before Brunata Online responded.
+- Pinned the Home Assistant test harness to a compatible `josepy` major version.
 - Removed accidentally committed Playwright runtime artifacts.
 
 ## 1.0.36 - 2026-08-28
