@@ -118,6 +118,10 @@ class PanelPayloadTests(unittest.TestCase):
                     "currency": "DKK",
                     "waterPrice": 12.5,
                     "heatingPrice": 0.8,
+                    "waterBudget": 100,
+                    "heatingBudget": 200,
+                    "reportPeriod": "month",
+                    "chartDays": 14,
                 },
             }
         )
@@ -147,6 +151,10 @@ class PanelPayloadTests(unittest.TestCase):
                 "currency": "DKK",
                 "waterPrice": 12.5,
                 "heatingPrice": 0.0,
+                "waterBudget": 0.0,
+                "heatingBudget": 0.0,
+                "reportPeriod": "week",
+                "chartDays": 30,
             },
         )
         self.assertEqual(
@@ -204,6 +212,10 @@ class PanelSettingsUpdateTests(unittest.IsolatedAsyncioTestCase):
             "currency": "DKK",
             "waterPrice": 10.25,
             "heatingPrice": 0.0,
+            "waterBudget": 0.0,
+            "heatingBudget": 0.0,
+            "reportPeriod": "week",
+            "chartDays": 30,
         }
         self.assertEqual(store.saved, expected)
         self.assertEqual(hass.data[panel.PANEL_SETTINGS_DATA], expected)

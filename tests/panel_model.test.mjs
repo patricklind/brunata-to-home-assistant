@@ -2,12 +2,37 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  budgetProgress,
+  comparison,
   consumptionDelta,
   formatReadingDate,
   groupCompatibleMeters,
   periodPoints,
   unitPrice,
 } from "../custom_components/brunata_online/www/panel-model.js";
+
+test("compares equal rolling periods", () => {
+  const history = [
+    { date: "2026-07-31", value: 100 },
+    { date: "2026-08-07", value: 112 },
+    { date: "2026-08-14", value: 130 },
+  ];
+  assert.deepEqual(comparison(history, 7), {
+    current: 18,
+    previous: 12,
+    changePercent: 50,
+  });
+});
+
+test("calculates safe monthly budget progress", () => {
+  assert.deepEqual(budgetProgress(25, 100), {
+    consumed: 25,
+    budget: 100,
+    remaining: 75,
+    percent: 25,
+  });
+  assert.equal(budgetProgress(25, 0), null);
+});
 
 test("uses calendar days and an anchor point for period consumption", () => {
   const history = [

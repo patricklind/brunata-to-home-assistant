@@ -6,6 +6,8 @@ import {
   normalizeSettings,
 } from "./localize.js";
 import {
+  budgetProgress,
+  comparison,
   consumptionDelta,
   formatReadingDate,
   groupCompatibleMeters,
@@ -43,6 +45,8 @@ class BrunataOnlinePanel extends HTMLElement {
     this._error = null;
     this._tab = "overview";
     this._account = 0;
+    this._dateFrom = "";
+    this._dateTo = "";
     this._settings = normalizeSettings();
     this._settingsFeedback = null;
     try {
@@ -133,7 +137,12 @@ class BrunataOnlinePanel extends HTMLElement {
   }
 
   _points(meter) {
-    return periodPoints(meter.history, this._settings.period);
+    const ranged = (meter.history || []).filter(
+      (point) =>
+        (!this._dateFrom || point.date >= this._dateFrom) &&
+        (!this._dateTo || point.date <= this._dateTo),
+    );
+    return periodPoints(ranged, this._settings.chartDays);
   }
 
   _delta(meter) {
@@ -154,6 +163,103 @@ class BrunataOnlinePanel extends HTMLElement {
       style: "currency",
       currency: this._settings.currency,
     }).format(value * price);
+  }
+
+  _reports(meters) {
+    const period = this._settings.reportPeriod;
+    const days = { week: 7, month: 30, year: 365 }[period];
+    const groups = groupCompatibleMeters(meters);
+    const waterBudgetIndex = groups.findIndex(
+      (group) =>
+        ["cold_water", "hot_water"].includes(group[0].medium) &&
+        group[0].unit === "m³",
+    );
+    const rows = groups.map((group, groupIndex) => {
+      const reports = group
+        .map((meter) => comparison(meter.history, days))
+        .filter(Boolean);
+      const current = reports.reduce((sum, item) => sum + item.current, 0);
+      const previous = reports.reduce((sum, item) => sum + item.previous, 0);
+      const change =
+        reports.length && previous > 0
+          ? Math.round(((current - previous) / previous) * 1000) / 10
+          : null;
+      const medium = group[0].medium;
+      const unit = group[0].unit;
+      const budgetMeters =
+        groupIndex === waterBudgetIndex
+          ? meters.filter(
+              (meter) =>
+                ["cold_water", "hot_water"].includes(meter.medium) &&
+                meter.unit === "m³",
+            )
+          : group;
+      const monthly = budgetMeters
+        .map((meter) => comparison(meter.history, 30)?.current)
+        .filter((value) => value !== undefined)
+        .reduce((sum, value) => sum + value, 0);
+      const budgetAmount =
+        groupIndex === waterBudgetIndex
+          ? this._settings.waterBudget
+          : medium === "heating" && unit === "kWh"
+            ? this._settings.heatingBudget
+            : 0;
+      const budget = budgetProgress(monthly, budgetAmount);
+      return `<article class="report"><header><b>${this._medium(
+        medium,
+      )}</b><strong>${reports.length ? this._format(current, unit) : "–"}</strong></header><p>${
+        reports.length
+          ? `${this._t("comparedWithPrevious")}: ${
+              change === null ? "–" : `${change > 0 ? "+" : ""}${change}%`
+            }`
+          : this._t("insufficientHistory")
+      }</p>${
+        budget
+          ? `<div class="budget"><span>${this._t("budget")}: ${this._format(
+              budget.budget,
+              unit,
+            )}</span><progress max="100" value="${Math.min(
+              budget.percent,
+              100,
+            )}"></progress><small>${this._t("remaining")}: ${this._format(
+              budget.remaining,
+              unit,
+            )}</small></div>`
+          : ""
+      }</article>`;
+    });
+    return `<section class="card"><div class="section-title"><div><h2>${this._t(
+      "reports",
+    )}</h2><p>${this._t(period)}</p></div><button class="export" type="button">${this._t(
+      "export",
+    )}</button></div><div class="report-grid">${
+      rows.join("") || this._empty()
+    }</div></section>`;
+  }
+
+  _downloadCsv(meters) {
+    const lines = ["meter,medium,unit,date,value"];
+    const safeCell = (value) => {
+      value = String(value ?? "");
+      if (/^[=+\-@]/.test(value)) value = `'${value}`;
+      return `"${value.replaceAll('"', '""')}"`;
+    };
+    for (const meter of meters) {
+      for (const point of meter.history || []) {
+        lines.push(
+          [meter.name, meter.medium, meter.unit, point.date, point.value]
+            .map(safeCell)
+            .join(","),
+        );
+      }
+    }
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(
+      new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" }),
+    );
+    link.download = `brunata-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
   }
 
   _sparkline(meter, color) {
@@ -238,7 +344,19 @@ class BrunataOnlinePanel extends HTMLElement {
       "consumption",
     )}</h2><p>${this._t(
       this._settings.period === 7 ? "last7" : "last30",
-    )}</p></div></div>
+    )}</p></div></div><div class="chart-controls"><label>${this._t(
+      "chartRange",
+    )}<select name="chartDays"><option value="7" ${
+      this._settings.chartDays === 7 ? "selected" : ""
+    }>7</option><option value="14" ${
+      this._settings.chartDays === 14 ? "selected" : ""
+    }>14</option><option value="30" ${
+      this._settings.chartDays === 30 ? "selected" : ""
+    }>30</option></select></label><label>From<input type="date" name="dateFrom" value="${escapeHtml(
+      this._dateFrom,
+    )}"></label><label>To<input type="date" name="dateTo" value="${escapeHtml(
+      this._dateTo,
+    )}"></label></div>
       <div class="charts">${
         meters
           .map((meter) => {
@@ -317,6 +435,30 @@ class BrunataOnlinePanel extends HTMLElement {
       )} / kWh</span><input name="heatingPrice" type="number" min="0" step="0.01" value="${
         s.heatingPrice
       }"></label>
+      <label><span>${this._medium("cold_water")} · ${this._t(
+        "budget",
+      )} / m³</span><input name="waterBudget" type="number" min="0" step="0.01" value="${s.waterBudget}"></label>
+      <label><span>${this._medium("heating")} · ${this._t(
+        "budget",
+      )} / kWh</span><input name="heatingBudget" type="number" min="0" step="0.01" value="${s.heatingBudget}"></label>
+      <label><span>${this._t("reports")}</span><select name="reportPeriod">${[
+        "week",
+        "month",
+        "year",
+      ]
+        .map(
+          (value) =>
+            `<option value="${value}" ${s.reportPeriod === value ? "selected" : ""}>${this._t(value)}</option>`,
+        )
+        .join("")}</select></label>
+      <label><span>${this._t("chartRange")}</span><select name="chartDays">${[
+        7, 14, 30,
+      ]
+        .map(
+          (value) =>
+            `<option value="${value}" ${s.chartDays === value ? "selected" : ""}>${value}</option>`,
+        )
+        .join("")}</select></label>
       <button class="save" type="submit" ${
         this._savingSettings ? "disabled" : ""
       }>${this._t("save")}</button>${
@@ -353,7 +495,9 @@ class BrunataOnlinePanel extends HTMLElement {
           ? this._overview(meters)
           : this._tab === "consumption"
             ? this._consumption(meters)
-            : this._metersView(meters);
+            : this._tab === "reports"
+              ? this._reports(meters)
+              : this._metersView(meters);
     const locale = getLocale(this._hass);
     this.shadowRoot.innerHTML = `<style>${STYLES}</style><div class="page" lang="${escapeHtml(
       locale,
@@ -378,6 +522,7 @@ class BrunataOnlinePanel extends HTMLElement {
       <nav aria-label="Brunata Online">${[
         ["overview", "overview"],
         ["consumption", "consumption"],
+        ["reports", "reports"],
         ["meters", "devices"],
         ["settings", "settings"],
       ]
@@ -418,6 +563,26 @@ class BrunataOnlinePanel extends HTMLElement {
         this._account = Number(event.target.value);
         this._render();
       });
+    this.shadowRoot.querySelector(".export")?.addEventListener("click", () => {
+      this._downloadCsv(meters);
+    });
+    if (this._tab === "consumption") {
+      this.shadowRoot
+        .querySelector('[name="chartDays"]')
+        ?.addEventListener("change", (event) => {
+          this._settings.chartDays = Number(event.target.value);
+          this._render();
+        });
+      for (const name of ["dateFrom", "dateTo"]) {
+        this.shadowRoot
+          .querySelector(`[name="${name}"]`)
+          ?.addEventListener("change", (event) => {
+            this[name === "dateFrom" ? "_dateFrom" : "_dateTo"] =
+              event.target.value;
+            this._render();
+          });
+      }
+    }
     this.shadowRoot
       .querySelector("form")
       ?.addEventListener("submit", async (event) => {
@@ -448,7 +613,7 @@ class BrunataOnlinePanel extends HTMLElement {
 
 const STYLES = `
 :host{--red:#e32636;--blue:#005ca9;display:block;background:var(--primary-background-color);color:var(--primary-text-color);min-height:100vh;font-family:var(--paper-font-body1_-_font-family,system-ui,sans-serif)}*{box-sizing:border-box}.page{max-width:1180px;margin:auto;padding:28px 24px 60px}.hero{display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{display:flex;align-items:center;gap:14px}.brand img{width:48px;height:48px;border-radius:12px}.brand h1{font-size:1.55rem;margin:0}.brand p,.section-title p{color:var(--secondary-text-color);margin:3px 0 0}.actions{display:flex;gap:9px}.actions select,.refresh{border:1px solid var(--divider-color);background:var(--card-background-color);color:inherit;border-radius:10px;padding:9px 12px}.refresh{display:grid;place-items:center;cursor:pointer}.refresh:disabled{cursor:wait;opacity:.65}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--primary-color,var(--blue));outline-offset:3px}nav{display:flex;gap:24px;border-bottom:1px solid var(--divider-color);margin:28px 0 20px;overflow-x:auto}nav button{border:0;border-bottom:3px solid transparent;background:none;color:var(--secondary-text-color);font:inherit;font-weight:600;padding:10px 2px;cursor:pointer;white-space:nowrap}nav button.active{color:var(--blue);border-color:var(--red)}.status{display:flex;align-items:center;gap:7px;color:var(--secondary-text-color);font-size:.82rem;margin-bottom:16px}.status span:last-child{margin-inline-start:auto}.dot{width:8px;height:8px;border-radius:50%;background:#999}.dot.ok{background:#22a06b}.dot.bad{background:#e34b4b}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:18px}.metric,.card,.chart,.meter{background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,.04)}.metric{padding:18px;border-top:3px solid var(--accent)}.metric-head{display:flex;align-items:center;gap:9px;font-weight:600}.icon{color:var(--accent)}.metric>strong{display:block;font-size:1.75rem;margin-top:18px}.metric>small,.chart small,.meter small,.reading small{display:block;color:var(--secondary-text-color);margin-top:3px}.spark{width:100%;height:62px;margin-top:14px;overflow:visible}.no-chart{height:62px;display:grid;place-items:center;color:var(--secondary-text-color);font-size:.8rem}.card{padding:20px;margin-bottom:18px}.section-title{display:flex;justify-content:space-between;margin-bottom:14px}.section-title h2{font-size:1.05rem;margin:0}.reading{display:flex;align-items:center;gap:12px;padding:13px 4px;border-top:1px solid var(--divider-color)}.reading:first-child{border-top:0}.reading-icon{width:34px;height:34px;display:grid;place-items:center;background:var(--secondary-background-color);border-radius:10px}.reading-name{flex:1}.reading>strong,.chart header>strong,.meter>strong{font-variant-numeric:tabular-nums}.charts,.meter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.chart{padding:16px}.chart header{display:flex;justify-content:space-between;gap:12px}.meter{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:15px}.meter-icon{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);padding:9px;border-radius:11px}.settings-card{max-width:680px}.settings-card form{display:grid;grid-template-columns:1fr 1fr;gap:16px}.settings-card label{display:flex;flex-direction:column;gap:7px;color:var(--secondary-text-color);font-size:.86rem}.settings-card input,.settings-card select{width:100%;border:1px solid var(--divider-color);border-radius:9px;background:var(--secondary-background-color);color:var(--primary-text-color);font:inherit;padding:10px}.save{grid-column:1/-1;justify-self:start;border:0;border-radius:9px;background:var(--primary-color,var(--blue));color:var(--text-primary-color,#fff);font:inherit;font-weight:600;padding:10px 22px;cursor:pointer}.empty,.loading,.error{grid-column:1/-1;min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--secondary-text-color)}.error{color:var(--error-color,#db4437)}@media(max-width:760px){.page{padding:18px 12px 40px}.metrics,.charts,.meter-grid,.settings-card form{grid-template-columns:1fr}.hero{align-items:flex-start}.brand p{display:none}.metric>strong{font-size:1.45rem}nav{gap:18px}.reading{align-items:flex-start}.reading>strong{margin-inline-start:auto;text-align:end}}
-.save:disabled{cursor:wait;opacity:.65}.settings-feedback{grid-column:1/-1;margin:0;color:var(--success-color,#22a06b)}.settings-feedback.error{color:var(--error-color,#db4437)}
+.save:disabled{cursor:wait;opacity:.65}.settings-feedback{grid-column:1/-1;margin:0;color:var(--success-color,#22a06b)}.settings-feedback.error{color:var(--error-color,#db4437)}.chart-controls{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px}.chart-controls label{display:flex;align-items:center;gap:7px;color:var(--secondary-text-color);font-size:.82rem}.chart-controls input,.chart-controls select,.export{border:1px solid var(--divider-color);border-radius:8px;background:var(--secondary-background-color);color:inherit;padding:8px;font:inherit}.export{cursor:pointer}.report-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.report{border:1px solid var(--divider-color);border-radius:12px;padding:16px}.report header{display:flex;justify-content:space-between;gap:12px}.report p,.budget small{color:var(--secondary-text-color)}.budget{display:grid;gap:7px}.budget progress{width:100%;accent-color:var(--primary-color,var(--blue))}@media(max-width:760px){.report-grid{grid-template-columns:1fr}.chart-controls{align-items:stretch}.chart-controls label{justify-content:space-between;flex:1 1 100%}}
 `;
 
 if (!customElements.get("brunata-online-panel")) {

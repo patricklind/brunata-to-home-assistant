@@ -85,6 +85,16 @@ const ENGLISH = Object.freeze({
   precision: "Display precision",
   price: "Price",
   period: "Period",
+  reports: "Reports",
+  comparedWithPrevious: "Compared with previous period",
+  insufficientHistory: "Not enough history",
+  budget: "Monthly budget",
+  remaining: "Remaining",
+  week: "Week",
+  month: "Month",
+  year: "Year",
+  chartRange: "Chart range",
+  export: "Export CSV",
 });
 
 const HA_KEYS = Object.freeze({
@@ -216,5 +226,13 @@ export function normalizeSettings(value = {}) {
       : "EUR",
     waterPrice: Math.max(0, number(value.waterPrice)),
     heatingPrice: Math.max(0, number(value.heatingPrice)),
+    waterBudget: Math.max(0, number(value.waterBudget)),
+    heatingBudget: Math.max(0, number(value.heatingBudget)),
+    reportPeriod: ["week", "month", "year"].includes(value.reportPeriod)
+      ? value.reportPeriod
+      : "week",
+    chartDays: [7, 14, 30].includes(Number(value.chartDays))
+      ? Number(value.chartDays)
+      : 30,
   };
 }

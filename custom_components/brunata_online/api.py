@@ -51,7 +51,7 @@ RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 MAX_API_ATTEMPTS = 3
 AUTH_REQUEST_TIMEOUT: tuple[int, int] = (30, 90)
 AUTH_MAX_ATTEMPTS = 3
-HISTORY_DAYS_BACK = 30
+HISTORY_DAYS_BACK = 62
 HISTORY_REFRESH_INTERVAL = timedelta(hours=12)
 MAX_HISTORY_PARALLEL_REQUESTS = 4
 
@@ -118,7 +118,7 @@ class BrunataOnlineClient:
         try:
             meter_history_30d, meter_history_meta = await asyncio.wait_for(
                 self._get_meter_history_30d(filtered),
-                timeout=25,
+                timeout=45,
             )
         except (TimeoutError, asyncio.TimeoutError):
             meter_history_meta.update(

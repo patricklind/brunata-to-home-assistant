@@ -450,6 +450,21 @@ async def async_setup_entry(
                     )
                 )
 
+        heating_rows = [
+            row
+            for row in _rows_for_mediums(coordinator.data, {"heating"})
+            if _unit_from_code(
+                (row.get("meter") or {}).get("unit")
+                if isinstance(row.get("meter"), dict)
+                else None
+            )
+            == "kWh"
+        ]
+        heating_token = "aggregate|heating_energy_total|total"
+        if heating_rows and heating_token not in known_sensors:
+            known_sensors.add(heating_token)
+            new_entities.append(BrunataAggregateHeatingEnergySensor(coordinator))
+
         if new_entities:
             async_add_entities(new_entities)
 
@@ -882,3 +897,61 @@ class BrunataAggregateWaterLastDaysSensor(_BrunataAggregateWaterBase):
             }
         )
         return attrs
+
+
+class BrunataAggregateHeatingEnergySensor(
+    CoordinatorEntity[BrunataDataCoordinator], SensorEntity
+):
+    """Aggregate cumulative kWh for Home Assistant's Energy dashboard."""
+
+    _attr_has_entity_name = True
+    _attr_name = "Brunata heating energy total"
+    _attr_native_unit_of_measurement = "kWh"
+    _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+
+    def __init__(self, coordinator: BrunataDataCoordinator) -> None:
+        super().__init__(coordinator)
+        self._entry_id = coordinator.config_entry.entry_id
+        self._attr_unique_id = aggregate_unique_id(
+            self._entry_id, "heating_energy_total"
+        )
+
+    @property
+    def _rows(self) -> list[dict[str, Any]]:
+        return [
+            row
+            for row in _rows_for_mediums(self.coordinator.data, {"heating"})
+            if _unit_from_code(
+                (row.get("meter") or {}).get("unit")
+                if isinstance(row.get("meter"), dict)
+                else None
+            )
+            == "kWh"
+        ]
+
+    @property
+    def available(self) -> bool:
+        return super().available and bool(self._rows)
+
+    @property
+    def native_value(self):
+        return _sum_current_values(self.coordinator.data, self._rows)
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={
+                aggregate_device_identifier(self._entry_id, "heating_energy_total")
+            },
+            manufacturer="Brunata",
+            model="Virtual aggregate",
+            name="Brunata heating energy aggregate",
+        )
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {
+            "source_meter_count": len(self._rows),
+            "recommended_for_energy_dashboard": True,
+        }

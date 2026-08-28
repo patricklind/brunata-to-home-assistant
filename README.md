@@ -21,7 +21,7 @@
 
 `brunata_online` is a Home Assistant custom integration that authenticates against Brunata Online and creates water/heating meter sensors from `online.brunata.com`.
 
-Current integration release: **v1.0.35**. The integration declares Home
+Current integration release: **v1.0.36**. The integration declares Home
 Assistant **2024.6.0 or newer** as its minimum supported version.
 
 ---
@@ -143,13 +143,17 @@ data or Brunata readings.
 
 ### Sidebar panel
 
-The panel contains four views:
+The panel contains five views:
 
 - **Overview** — period consumption grouped by compatible medium and unit,
   recent readings, and compact history charts.
 - **Consumption** — one chart and period delta per meter.
 - **Devices** — meter placement, medium, number, current value, and unit.
 - **Settings** — Home Assistant-synchronized display and price preferences.
+
+The development version adds a **Reports** view with week/month/year comparison,
+monthly budgets, CSV download, and explicit “not enough history” feedback. The
+Consumption view also supports 7/14/30-day zoom and optional from/to dates.
 
 Panel data include private meter information, so both the sidebar route and its
 WebSocket data command require a Home Assistant administrator account.
@@ -163,6 +167,10 @@ WebSocket data command require a Home Assistant administrator account.
 | Currency          | Three-letter code          | EUR     | Used for estimated costs                           |
 | Water price       | Non-negative price per m³  | 0       | Applies to cold and hot water measured in m³       |
 | Heating price     | Non-negative price per kWh | 0       | Never applied to radiator allocation units         |
+| Water budget      | Non-negative m³ per month  | 0       | Zero disables budget progress                      |
+| Heating budget    | Non-negative kWh per month | 0       | Only applies to physical kWh meters                |
+| Report period     | Week, month, or year       | Week    | Requires two complete periods of history           |
+| Chart range       | 7, 14, or 30 days          | 30 days | Can be narrowed further with from/to dates         |
 
 Settings are validated and stored in Home Assistant's integration storage.
 Because the panel and settings command are administrator-only, an administrator
@@ -191,6 +199,21 @@ Use one of:
 - `sensor.brunata_water_total` (all water meters)
 - `sensor.brunata_cold_water_total`
 - `sensor.brunata_hot_water_total`
+
+For heating energy, use `sensor.brunata_heating_energy_total` when it is
+available. It is created only from physical `kWh` heat meters. Radiator
+allocation units are intentionally excluded because they are not energy.
+
+### Actions and report export
+
+- `brunata_online.refresh` requests an immediate coordinator refresh.
+- `brunata_online.generate_report` returns a week/month/year comparison.
+- `brunata_online.export_csv` returns CSV response data without writing to an
+  arbitrary path on the Home Assistant host.
+
+These actions expose private consumption data and require an administrator when
+called by a user. Automations running in Home Assistant's system context remain
+supported. Service-response data can be used by scripts and automations.
 
 > [!IMPORTANT]
 > Use the `..._total` sensors for Energy/Water.
@@ -356,8 +379,20 @@ python -m compileall -q custom_components tests fetch_brunata_data.py
 ```
 
 The CI workflow additionally runs pre-commit, HACS validation, and Hassfest.
-Tests use stubs and fixtures; they do not contact Brunata or require a Home
-Assistant installation.
+Fast tests use stubs and fixtures. A separate CI job installs the pinned
+`pytest-homeassistant-custom-component` harness and loads the integration in a
+real Home Assistant core with the external Brunata boundary mocked.
+
+### Stable and beta releases
+
+- Stable: set the manifest version to `X.Y.Z`, then tag `vX.Y.Z`.
+- Beta: set the manifest version to `X.Y.Z-beta.N`, then tag
+  `vX.Y.Z-beta.N`.
+
+Beta tags are GitHub prereleases and do not replace the latest stable release.
+In HACS, users must enable beta versions for this repository before installing
+a beta. Published tags are immutable; promote a tested beta by creating a new
+stable version and tag.
 
 ### Known limitations
 
@@ -371,6 +406,10 @@ Assistant installation.
   aggregate entity registry entries are migrated in place during upgrade so
   their entity IDs and recorder history are retained.
 - Cost values are estimates derived from user-entered prices and meter deltas.
+- The integration requests 62 daily history points so week and month comparison
+  can use two complete rolling periods. Year comparison remains unavailable
+  unless a future Brunata response contains enough history; the panel does not
+  fabricate comparisons from partial data.
 
 ---
 

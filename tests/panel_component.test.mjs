@@ -8,7 +8,7 @@ globalThis.customElements = {
     if (registry.has(name)) {
       throw new DOMException(
         `the name "${name}" has already been used with this registry`,
-        "NotSupportedError"
+        "NotSupportedError",
       );
     }
     registry.set(name, constructor);
@@ -21,7 +21,7 @@ globalThis.customElements = {
 test("panel module can be cache-busted after an integration reload", async () => {
   const moduleUrl = new URL(
     "../custom_components/brunata_online/www/brunata-panel.js",
-    import.meta.url
+    import.meta.url,
   );
 
   await import(`${moduleUrl.href}?load=1`);

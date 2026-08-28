@@ -88,6 +88,10 @@ def _diagnostic_data(data: object) -> dict[str, Any]:
         for row in data.get("meters", [])
         if (diagnostic := _diagnostic_meter(row)) is not None
     ]
+    missing_readings = sum(
+        1 for meter in meters if meter.get("reading", {}).get("value") is None
+    )
+    history = _diagnostic_history(data.get("meter_history_30d"))
     return {
         "available": True,
         "fetched_at": data.get("fetched_at"),
@@ -95,8 +99,17 @@ def _diagnostic_data(data: object) -> dict[str, Any]:
         "non_null_readings": data.get("non_null_readings"),
         "attempts": data.get("attempts", []),
         "meters": meters,
-        "meter_history_30d": _diagnostic_history(data.get("meter_history_30d")),
+        "meter_history_30d": history,
         "meter_history_meta": data.get("meter_history_meta", {}),
+        "health": {
+            "meter_count": len(meters),
+            "missing_reading_count": missing_readings,
+            "history_meter_count": len(history),
+            "history_point_count": sum(len(item["points"]) for item in history),
+            "history_partial_failure": bool(
+                (data.get("meter_history_meta") or {}).get("failed_days")
+            ),
+        },
     }
 
 
@@ -110,4 +123,17 @@ async def async_get_config_entry_diagnostics(
         "coordinator": _diagnostic_data(
             coordinator.data if coordinator is not None else None
         ),
+        "runtime": {
+            "last_update_success": (
+                getattr(coordinator, "last_update_success", False)
+                if coordinator is not None
+                else False
+            ),
+            "last_exception": (
+                type(coordinator.last_exception).__name__
+                if coordinator is not None
+                and getattr(coordinator, "last_exception", None) is not None
+                else None
+            ),
+        },
     }

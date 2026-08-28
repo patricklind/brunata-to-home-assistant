@@ -1,0 +1,50 @@
+- generic [ref=e64]:
+  - banner [ref=e65]:
+    - generic [ref=e67]:
+      - heading "Brunata Online" [level=1] [ref=e68]
+      - paragraph [ref=e69]: Consumption
+    - button "Refresh" [ref=e71] [cursor=pointer]
+  - navigation "Brunata Online" [ref=e72]:
+    - button "Overview" [ref=e73] [cursor=pointer]
+    - button "Consumption" [ref=e74] [cursor=pointer]
+    - button "Reports" [ref=e75] [cursor=pointer]
+    - button "Devices" [ref=e76] [cursor=pointer]
+    - button "Settings" [ref=e77] [cursor=pointer]
+  - main [ref=e78]:
+    - generic [ref=e79]:
+      - text: Updated
+      - generic [ref=e81]: 8/28/2026, 8:00:00 AM
+    - generic [ref=e82]:
+      - generic [ref=e83]:
+        - generic [ref=e84]:
+          - heading "Reports" [level=2] [ref=e85]
+          - paragraph [ref=e86]: Week
+        - button "Export CSV" [ref=e87] [cursor=pointer]
+      - generic [ref=e88]:
+        - article [ref=e89]:
+          - generic [ref=e90]:
+            - generic [ref=e91]: Cold water
+            - strong [ref=e92]: 4.9 m³
+          - paragraph [ref=e93]: "Compared with previous period: 0%"
+          - generic [ref=e94]:
+            - generic [ref=e95]: "Monthly budget: 55 m³"
+            - progressbar [ref=e96]
+            - generic [ref=e97]: "Remaining: 34 m³"
+        - article [ref=e98]:
+          - generic [ref=e99]:
+            - generic [ref=e100]: Hot water
+            - strong [ref=e101]: 2.45 m³
+          - paragraph [ref=e102]: "Compared with previous period: 0%"
+          - generic [ref=e103]:
+            - generic [ref=e104]: "Monthly budget: 55 m³"
+            - progressbar [ref=e105]
+            - generic [ref=e106]: "Remaining: 44.5 m³"
+        - article [ref=e107]:
+          - generic [ref=e108]:
+            - generic [ref=e109]: Heating
+            - strong [ref=e110]: 4.9 units
+          - paragraph [ref=e111]: "Compared with previous period: 0%"
+          - generic [ref=e112]:
+            - generic [ref=e113]: "Monthly budget: 120 units"
+            - progressbar [ref=e114]
+            - generic [ref=e115]: "Remaining: 99 units"

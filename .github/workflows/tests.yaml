@@ -99,3 +99,18 @@ jobs:
           node-version: 24
       - name: Run frontend tests
         run: node --test tests/*.test.mjs
+
+  home-assistant-tests:
+    runs-on: "ubuntu-latest"
+    name: Home Assistant runtime tests
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install Home Assistant test harness
+        run: pip install --requirement requirements_test.txt
+      - name: Run Home Assistant runtime tests
+        run: pytest -q ha_tests

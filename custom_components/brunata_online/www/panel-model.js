@@ -34,6 +34,51 @@ export function consumptionDelta(history = [], periodDays = 30) {
   return delta >= 0 ? delta : null;
 }
 
+export function comparison(history = [], periodDays = 30) {
+  const points = [...history]
+    .filter((point) => Number.isFinite(Number(point.value)) && point.date)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  if (points.length < 3) return null;
+  const end = points.at(-1);
+  const endDate = new Date(`${end.date.slice(0, 10)}T00:00:00Z`);
+  const anchor = (days) => {
+    const target = new Date(endDate);
+    target.setUTCDate(target.getUTCDate() - days);
+    return [...points]
+      .reverse()
+      .find(
+        (point) => new Date(`${point.date.slice(0, 10)}T00:00:00Z`) <= target,
+      );
+  };
+  const currentStart = anchor(periodDays);
+  const previousStart = anchor(periodDays * 2);
+  if (!currentStart || !previousStart) return null;
+  const current = Number(end.value) - Number(currentStart.value);
+  const previous = Number(currentStart.value) - Number(previousStart.value);
+  if (current < 0 || previous < 0) return null;
+  return {
+    current,
+    previous,
+    changePercent:
+      previous === 0
+        ? null
+        : Math.round(((current - previous) / previous) * 1000) / 10,
+  };
+}
+
+export function budgetProgress(consumed, budget) {
+  consumed = Number(consumed);
+  budget = Number(budget);
+  if (!Number.isFinite(consumed) || !Number.isFinite(budget)) return null;
+  if (consumed < 0 || budget <= 0) return null;
+  return {
+    consumed,
+    budget,
+    remaining: Math.max(budget - consumed, 0),
+    percent: Math.round((consumed / budget) * 1000) / 10,
+  };
+}
+
 export function groupCompatibleMeters(meters = []) {
   const groups = new Map();
   for (const meter of meters) {

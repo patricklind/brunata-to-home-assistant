@@ -11,6 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN
+from .analytics import consumption_report
 from .number import parse_finite_number
 
 PANEL_WS_REGISTERED = "brunata_online_panel_ws_registered"
@@ -23,6 +24,10 @@ DEFAULT_PANEL_SETTINGS: dict[str, Any] = {
     "currency": "EUR",
     "waterPrice": 0.0,
     "heatingPrice": 0.0,
+    "waterBudget": 0.0,
+    "heatingBudget": 0.0,
+    "reportPeriod": "week",
+    "chartDays": 30,
 }
 
 
@@ -47,12 +52,21 @@ def normalize_panel_settings(value: Any) -> dict[str, Any]:
         parsed = _number(source.get(name))
         return max(0.0, parsed) if parsed is not None else 0.0
 
+    report_period = str(source.get("reportPeriod") or "week")
+    if report_period not in {"week", "month", "year"}:
+        report_period = "week"
+    chart_days_value = _number(source.get("chartDays"))
+    chart_days = int(chart_days_value) if chart_days_value in {7, 14, 30} else 30
     return {
         "period": period,
         "precision": precision,
         "currency": currency,
         "waterPrice": price("waterPrice"),
         "heatingPrice": price("heatingPrice"),
+        "waterBudget": price("waterBudget"),
+        "heatingBudget": price("heatingBudget"),
+        "reportPeriod": report_period,
+        "chartDays": chart_days,
     }
 
 
@@ -90,6 +104,14 @@ def build_panel_payload(hass: HomeAssistant) -> dict[str, Any]:
                 for name in ("meterId", "meterSequenceNo", "meterNo", "allocationUnit")
             )
             history = (data.get("meter_history_30d") or {}).get(key) or []
+            safe_history = [
+                {
+                    "date": point.get("date") or point.get("reading_date"),
+                    "value": _number(point.get("value")),
+                }
+                for point in history
+                if isinstance(point, dict) and _number(point.get("value")) is not None
+            ]
             meters.append(
                 {
                     "id": str(meter.get("meterId") or meter.get("meterNo") or key),
@@ -101,15 +123,11 @@ def build_panel_payload(hass: HomeAssistant) -> dict[str, Any]:
                     "unit": _unit(meter),
                     "value": _number(reading.get("value")),
                     "reading_date": reading.get("readingDate"),
-                    "history": [
-                        {
-                            "date": point.get("date") or point.get("reading_date"),
-                            "value": _number(point.get("value")),
-                        }
-                        for point in history
-                        if isinstance(point, dict)
-                        and _number(point.get("value")) is not None
-                    ],
+                    "history": safe_history,
+                    "reports": {
+                        period: consumption_report(safe_history, period=period)
+                        for period in ("week", "month", "year")
+                    },
                 }
             )
         accounts.append(

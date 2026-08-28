@@ -1,0 +1,40 @@
+refresh:
+  name: Refresh Brunata data
+  description: Request an immediate refresh from Brunata Online.
+  fields:
+    entry_id:
+      name: Config entry ID
+      description: Optional Brunata config entry. Leave empty to refresh all accounts.
+      example: 01HABCDEF123456789
+      selector:
+        text:
+
+generate_report:
+  name: Generate consumption report
+  description: Compare the latest week, month, or year with the preceding period.
+  fields:
+    entry_id:
+      name: Config entry ID
+      description: Optional Brunata config entry. Leave empty for all accounts.
+      selector:
+        text:
+    period:
+      name: Period
+      required: true
+      default: week
+      selector:
+        select:
+          options:
+            - week
+            - month
+            - year
+
+export_csv:
+  name: Export consumption CSV
+  description: Return privacy-sensitive meter history as CSV response data.
+  fields:
+    entry_id:
+      name: Config entry ID
+      description: Optional Brunata config entry. Leave empty for all accounts.
+      selector:
+        text:
