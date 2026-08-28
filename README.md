@@ -21,7 +21,7 @@
 
 `brunata_online` is a Home Assistant custom integration that authenticates against Brunata Online and creates water/heating meter sensors from `online.brunata.com`.
 
-Current integration release: **v1.0.34**. The integration declares Home
+Current integration release: **v1.0.35**. The integration declares Home
 Assistant **2024.6.0 or newer** as its minimum supported version.
 
 ---

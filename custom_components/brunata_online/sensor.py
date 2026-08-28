@@ -222,19 +222,6 @@ def _history_points_for_meter(
     return [point for point in points if isinstance(point, dict)]
 
 
-def _history_delta(points: list[dict[str, Any]]) -> float | None:
-    if len(points) < 2:
-        return None
-    first_value = _normalize_reading_value(points[0].get("value"))
-    last_value = _normalize_reading_value(points[-1].get("value"))
-    if first_value is None or last_value is None:
-        return None
-    delta = float(last_value) - float(first_value)
-    if delta < 0:
-        return None
-    return round(delta, 3)
-
-
 def _latest_history_value(points: list[dict[str, Any]]) -> float | int | None:
     """Return the newest usable cumulative value from meter history."""
     for point in reversed(points):
@@ -508,7 +495,6 @@ class BrunataMeterSensor(CoordinatorEntity[BrunataDataCoordinator], SensorEntity
         self._meter_identifier = str(
             meter.get("meterId") or meter_key[0] or meter_no or meter_key[1]
         )
-        self._meter_no = str(meter_no or self._meter_identifier)
         self._meter_serial = str(
             meter.get("serialNumber")
             or meter.get("serialNo")

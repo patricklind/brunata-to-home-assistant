@@ -58,7 +58,6 @@ class BrunataAuthError(Exception):
 class TokenData:
     access_token: str
     refresh_token: str | None
-    raw: dict[str, Any]
 
 
 def _extract_login_form_action(page_html: str) -> str:
@@ -202,7 +201,6 @@ def authenticate(username: str, password: str) -> tuple[requests.Session, TokenD
             refresh_token=(
                 str(tokens["refresh_token"]) if tokens.get("refresh_token") else None
             ),
-            raw=tokens,
         ),
     )
 
