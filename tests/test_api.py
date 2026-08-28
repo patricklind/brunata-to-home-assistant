@@ -10,9 +10,11 @@ import sys
 import types
 import unittest
 
+ROOT = Path(__file__).parents[1]
+
 
 def _load_module(name: str, relative_path: str):
-    path = Path(__file__).parents[1] / relative_path
+    path = ROOT / relative_path
     spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"Cannot load {path}")
@@ -45,7 +47,21 @@ if importlib.util.find_spec("aiohttp") is None:
     sys.modules["aiohttp"] = aiohttp
 
 
-api = _load_module("brunata_api", "custom_components/brunata_online/api.py")
+package = types.ModuleType("custom_components")
+package.__path__ = [str(ROOT / "custom_components")]
+integration = types.ModuleType("custom_components.brunata_online")
+integration.__path__ = [str(ROOT / "custom_components" / "brunata_online")]
+sys.modules["custom_components"] = package
+sys.modules["custom_components.brunata_online"] = integration
+
+_load_module(
+    "custom_components.brunata_online.number",
+    "custom_components/brunata_online/number.py",
+)
+api = _load_module(
+    "custom_components.brunata_online.api",
+    "custom_components/brunata_online/api.py",
+)
 debug_client = _load_module("brunata_debug_client", "fetch_brunata_data.py")
 
 
@@ -266,6 +282,39 @@ class DebugClientMeterSelectionTests(unittest.TestCase):
         self.assertEqual(best_date, "2026-08-01")
         self.assertEqual(values, {"cold": 110, "hot": 25})
 
+    def test_newer_invalid_reading_does_not_replace_numeric_value(self) -> None:
+        row = {
+            "meter": {
+                "meterId": "cold",
+                "meterSequenceNo": "1",
+                "meterNo": "100",
+                "allocationUnit": "K",
+            }
+        }
+        responses = {
+            "2026-07-01": [{**row, "reading": {"value": "10,5"}}],
+            "2026-08-01": [{**row, "reading": {"value": "invalid"}}],
+        }
+
+        original_candidates = debug_client.build_date_candidates
+        original_get_json = debug_client.api_get_json
+        try:
+            debug_client.build_date_candidates = lambda: [
+                "2026-07-01",
+                "2026-08-01",
+            ]
+            debug_client.api_get_json = lambda _session, _token, _path, params: (
+                responses[params["startdate"]]
+            )
+            _best_date, rows, _attempts = debug_client.pick_best_meter_payload(
+                None, "token"
+            )
+        finally:
+            debug_client.build_date_candidates = original_candidates
+            debug_client.api_get_json = original_get_json
+
+        self.assertEqual(rows[0]["reading"]["value"], "10,5")
+
 
 class HistoryFallbackTests(unittest.TestCase):
     """Verify API payload normalization for replaced transmitters."""
@@ -311,6 +360,11 @@ class HistoryFallbackTests(unittest.TestCase):
 
     def test_boolean_is_not_a_valid_meter_value(self) -> None:
         self.assertIsNone(api._to_float(True))
+
+    def test_non_finite_values_are_not_valid_meter_values(self) -> None:
+        for value in (float("nan"), float("inf"), "-Infinity", "NaN"):
+            with self.subTest(value=value):
+                self.assertIsNone(api._to_float(value))
 
 
 if __name__ == "__main__":

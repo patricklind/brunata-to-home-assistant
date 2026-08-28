@@ -17,6 +17,8 @@ import urllib.parse
 from aiohttp import ClientError, ClientResponseError, ClientSession, ClientTimeout
 import requests
 
+from .number import parse_finite_number
+
 BASE_URL = "https://online.brunata.com"
 API_BASE_URL = f"{BASE_URL}/online-webservice/v2/rest"
 AUTH_BASE_URL = f"{BASE_URL}/online-auth-webservice/v1/rest"
@@ -733,26 +735,8 @@ def _to_int(value: Any, default: int) -> int:
 
 
 def _to_float(value: Any) -> float | None:
-    if value is None or isinstance(value, bool):
-        return None
-    if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(value, str):
-        text = value.strip().replace(" ", "")
-        if not text:
-            return None
-        if "," in text and "." in text:
-            if text.rfind(",") > text.rfind("."):
-                text = text.replace(".", "").replace(",", ".")
-            else:
-                text = text.replace(",", "")
-        elif "," in text:
-            text = text.replace(",", ".")
-        try:
-            return float(text)
-        except ValueError:
-            return None
-    return None
+    number = parse_finite_number(value)
+    return float(number) if number is not None else None
 
 
 def _to_date(value: Any) -> date | None:

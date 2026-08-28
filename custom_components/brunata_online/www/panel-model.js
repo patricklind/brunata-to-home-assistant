@@ -16,12 +16,12 @@ export function periodPoints(history = [], periodDays = 30) {
   cutoff.setUTCDate(cutoff.getUTCDate() - periodDays);
 
   const inWindow = points.filter(
-    (point) => new Date(`${point.date.slice(0, 10)}T00:00:00Z`) >= cutoff
+    (point) => new Date(`${point.date.slice(0, 10)}T00:00:00Z`) >= cutoff,
   );
   const anchor = [...points]
     .reverse()
     .find(
-      (point) => new Date(`${point.date.slice(0, 10)}T00:00:00Z`) <= cutoff
+      (point) => new Date(`${point.date.slice(0, 10)}T00:00:00Z`) <= cutoff,
     );
   if (anchor && inWindow[0] !== anchor) inWindow.unshift(anchor);
   return inWindow;
@@ -57,7 +57,7 @@ export function formatReadingDate(value, locale) {
   if (match) {
     const [, year, month, day] = match;
     return new Intl.DateTimeFormat(locale, { timeZone: "UTC" }).format(
-      new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)))
+      new Date(Date.UTC(Number(year), Number(month) - 1, Number(day))),
     );
   }
   const parsed = new Date(value);

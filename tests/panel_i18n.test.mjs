@@ -116,6 +116,6 @@ test("normalizes persisted panel settings to safe supported values", () => {
       currency: "DKK",
       waterPrice: 12.5,
       heatingPrice: 0,
-    }
+    },
   );
 });

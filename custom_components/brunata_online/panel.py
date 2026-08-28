@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import math
 from typing import Any
 
 import voluptuous as vol
@@ -12,6 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN
+from .number import parse_finite_number
 
 PANEL_WS_REGISTERED = "brunata_online_panel_ws_registered"
 PANEL_SETTINGS_DATA = "brunata_online_panel_settings"
@@ -28,29 +28,8 @@ DEFAULT_PANEL_SETTINGS: dict[str, Any] = {
 
 def _number(value: Any) -> float | None:
     """Convert Brunata's localized numeric values for the frontend."""
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, (int, float)):
-        number = float(value)
-        return number if math.isfinite(number) else None
-    if not isinstance(value, str):
-        return None
-    text = value.strip().replace(" ", "")
-    if not text:
-        return None
-    if "," in text and "." in text:
-        text = (
-            text.replace(".", "").replace(",", ".")
-            if text.rfind(",") > text.rfind(".")
-            else text.replace(",", "")
-        )
-    elif "," in text:
-        text = text.replace(",", ".")
-    try:
-        number = float(text)
-        return number if math.isfinite(number) else None
-    except ValueError:
-        return None
+    number = parse_finite_number(value)
+    return float(number) if number is not None else None
 
 
 def normalize_panel_settings(value: Any) -> dict[str, Any]:

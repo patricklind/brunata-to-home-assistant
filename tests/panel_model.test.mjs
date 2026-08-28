@@ -27,9 +27,9 @@ test("does not report a meter reset as zero consumption", () => {
         { date: "2026-08-01", value: 100 },
         { date: "2026-08-27", value: 2 },
       ],
-      30
+      30,
     ),
-    null
+    null,
   );
 });
 
@@ -41,7 +41,7 @@ test("keeps incompatible heating units in separate groups", () => {
   ]);
   assert.deepEqual(
     groups.map((group) => group.length),
-    [1, 2]
+    [1, 2],
   );
 });
 

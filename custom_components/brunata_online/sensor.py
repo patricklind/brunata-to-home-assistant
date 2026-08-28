@@ -20,6 +20,7 @@ from homeassistant.util import dt as dt_util
 from . import BrunataDataCoordinator
 from .const import DOMAIN
 from .identity import aggregate_device_identifier, aggregate_unique_id
+from .number import parse_finite_number
 
 WATER_CONSUMPTION_WINDOWS_DAYS: tuple[int, ...] = (1, 7, 14, 30)
 HEATING_CONSUMPTION_WINDOWS_DAYS: tuple[int, ...] = (30,)
@@ -112,27 +113,7 @@ def _heating_format(medium: str, native_unit: str | None) -> str | None:
 
 def _normalize_reading_value(value: Any) -> float | int | None:
     """Normalize Brunata reading values to numeric values for statistics."""
-    if value is None:
-        return None
-    if isinstance(value, (int, float)):
-        return value
-    if isinstance(value, str):
-        text = value.strip().replace(" ", "")
-        if not text:
-            return None
-        if "," in text and "." in text:
-            if text.rfind(",") > text.rfind("."):
-                text = text.replace(".", "").replace(",", ".")
-            else:
-                text = text.replace(",", "")
-        elif "," in text:
-            # Brunata may return decimal-comma values for water readings.
-            text = text.replace(",", ".")
-        try:
-            return float(text)
-        except ValueError:
-            return None
-    return None
+    return parse_finite_number(value, preserve_integer=True)
 
 
 def _parse_reading_datetime(value: Any) -> datetime | None:

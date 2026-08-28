@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 import html
 import json
+import math
 import os
 import re
 import secrets
@@ -248,6 +249,33 @@ def build_date_candidates(days_back: int = 14) -> list[str]:
     return list(dict.fromkeys(out))
 
 
+def parse_reading_value(value: Any) -> float | None:
+    """Parse Brunata's localized numbers and reject invalid/non-finite values."""
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        number = float(value)
+        return number if math.isfinite(number) else None
+    if not isinstance(value, str):
+        return None
+    text = value.strip().replace(" ", "")
+    if not text:
+        return None
+    if "," in text and "." in text:
+        text = (
+            text.replace(".", "").replace(",", ".")
+            if text.rfind(",") > text.rfind(".")
+            else text.replace(",", "")
+        )
+    elif "," in text:
+        text = text.replace(",", ".")
+    try:
+        number = float(text)
+    except ValueError:
+        return None
+    return number if math.isfinite(number) else None
+
+
 def count_non_null_values(meters: Any) -> int:
     if not isinstance(meters, list):
         return 0
@@ -256,7 +284,10 @@ def count_non_null_values(meters: Any) -> int:
         if not isinstance(row, dict):
             continue
         reading = row.get("reading")
-        if isinstance(reading, dict) and reading.get("value") is not None:
+        if (
+            isinstance(reading, dict)
+            and parse_reading_value(reading.get("value")) is not None
+        ):
             count += 1
     return count
 
@@ -281,8 +312,7 @@ def reading_score(row: dict[str, Any], start_date: str) -> tuple[int, str, str]:
     reading = row.get("reading")
     value_is_valid = int(
         isinstance(reading, dict)
-        and reading.get("value") is not None
-        and not isinstance(reading.get("value"), bool)
+        and parse_reading_value(reading.get("value")) is not None
     )
     reading_date = (
         str(reading.get("readingDate") or "") if isinstance(reading, dict) else ""

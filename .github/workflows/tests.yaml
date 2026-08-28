@@ -30,10 +30,10 @@ jobs:
     name: Pre-commit
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.1
 
       - name: Set up Python ${{ env.DEFAULT_PYTHON }}
-        uses: actions/setup-python@v6.2.0
+        uses: actions/setup-python@v7.0.0
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
 
@@ -55,7 +55,7 @@ jobs:
     name: HACS
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.1
 
       - name: HACS validation
         uses: hacs/action@22.5.0
@@ -67,7 +67,7 @@ jobs:
     name: Hassfest
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.1
 
       - name: Hassfest validation
         uses: home-assistant/actions/hassfest@master
@@ -77,9 +77,9 @@ jobs:
     name: Unit tests
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.1
       - name: Set up Python ${{ env.DEFAULT_PYTHON }}
-        uses: actions/setup-python@v6.2.0
+        uses: actions/setup-python@v7.0.0
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
       - name: Install requirements
@@ -92,9 +92,9 @@ jobs:
     name: Frontend tests
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.1
       - name: Set up Node.js
-        uses: actions/setup-node@v6.5.0
+        uses: actions/setup-node@v7.0.0
         with:
           node-version: 24
       - name: Run frontend tests
