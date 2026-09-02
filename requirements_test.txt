@@ -1,4 +1,4 @@
-pytest-homeassistant-custom-component==0.13.132
+pytest-homeassistant-custom-component==0.13.361
 josepy<3
 home-assistant-frontend==20240605.0
 pycares==4.4.0
