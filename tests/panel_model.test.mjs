@@ -5,6 +5,7 @@ import {
   budgetProgress,
   comparison,
   consumptionDelta,
+  csvCell,
   formatReadingDate,
   groupCompatibleMeters,
   periodPoints,
@@ -32,6 +33,48 @@ test("calculates safe monthly budget progress", () => {
     percent: 25,
   });
   assert.equal(budgetProgress(25, 0), null);
+  assert.equal(budgetProgress(null, 100), null);
+  assert.equal(budgetProgress(undefined, 100), null);
+  assert.equal(budgetProgress(0, 100).percent, 0);
+});
+
+test("ignores missing values instead of converting them to zero", () => {
+  assert.equal(
+    comparison(
+      [
+        { date: "2026-07-31", value: null },
+        { date: "2026-08-07", value: 112 },
+        { date: "2026-08-14", value: 130 },
+      ],
+      7,
+    ),
+    null,
+  );
+});
+
+test("rejects resets inside a window even after the counter recovers", () => {
+  const history = [
+    { date: "2026-07-31", value: 100 },
+    { date: "2026-08-07", value: 112 },
+    { date: "2026-08-10", value: 1 },
+    { date: "2026-08-14", value: 130 },
+  ];
+  assert.equal(comparison(history, 7), null);
+  assert.equal(consumptionDelta(history, 7), null);
+});
+
+test("CSV protects formulas and control prefixes while preserving quoted text", () => {
+  for (const value of [
+    "=1+1",
+    "+1+1",
+    "-1+1",
+    "@SUM(A1)",
+    "  =1+1",
+    "\tname",
+  ]) {
+    assert.equal(csvCell(value), `"'${value}"`);
+  }
+  assert.equal(csvCell('Kitchen, "water"'), '"Kitchen, ""water"""');
 });
 
 test("uses calendar days and an anchor point for period consumption", () => {

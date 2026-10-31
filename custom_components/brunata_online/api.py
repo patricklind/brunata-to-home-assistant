@@ -188,6 +188,19 @@ class BrunataOnlineClient:
             *(fetch_candidate(startdate) for startdate in candidates)
         )
 
+        if not any(isinstance(rows, list) for _, rows, _ in results):
+            auth_error = next(
+                (
+                    error
+                    for _, _, error in results
+                    if isinstance(error, BrunataAuthError)
+                ),
+                None,
+            )
+            if auth_error is not None:
+                raise auth_error
+            raise BrunataConnectionError("No usable meter response from Brunata")
+
         for startdate, rows, error in results:
             if error is not None:
                 attempts.append(

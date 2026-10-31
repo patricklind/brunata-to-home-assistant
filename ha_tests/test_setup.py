@@ -7,7 +7,10 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.brunata_online.const import DOMAIN
 
 
-async def test_entry_creates_energy_compatible_entities_and_actions(hass) -> None:
+async def test_entry_creates_energy_compatible_entities_and_actions(
+    hass, freezer
+) -> None:
+    freezer.move_to("2026-08-28T12:00:00+00:00")
     entry = MockConfigEntry(
         domain=DOMAIN,
         title="Home",

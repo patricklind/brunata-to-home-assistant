@@ -57,6 +57,12 @@ def consumption_report(
     previous_start = _at_or_before(points, today - timedelta(days=days * 2))
     if end is None or current_start is None or previous_start is None:
         return empty
+    if not previous_start[0] < current_start[0] < end[0]:
+        return empty
+
+    window = [point for point in points if point[0] >= previous_start[0]]
+    if any(right[1] < left[1] for left, right in zip(window, window[1:])):
+        return empty
 
     current = end[1] - current_start[1]
     previous = current_start[1] - previous_start[1]

@@ -68,6 +68,16 @@ def build_report_response(coordinators: list[Any], period: str) -> dict[str, Any
     return {"period": period, "accounts": accounts}
 
 
+def _csv_text(value: Any) -> str:
+    """Keep external text from becoming a spreadsheet formula or control cell."""
+    text = str(value or "")
+    if text.lstrip().startswith(("=", "+", "-", "@")) or text.startswith(
+        ("\t", "\r", "\n")
+    ):
+        return f"'{text}"
+    return text
+
+
 def build_csv_response(coordinators: list[Any]) -> dict[str, str]:
     """Return CSV content without writing an arbitrary server-side path."""
     output = StringIO(newline="")
@@ -79,17 +89,15 @@ def build_csv_response(coordinators: list[Any]) -> dict[str, str]:
             if not isinstance(row, dict):
                 continue
             meter = row.get("meter") if isinstance(row.get("meter"), dict) else {}
-            name = str(meter.get("placement") or "Meter")
-            if name.startswith(("=", "+", "-", "@")):
-                name = f"'{name}"
+            name = _csv_text(meter.get("placement") or "Meter")
             for point in _history_for_row(data, row):
                 value = parse_finite_number(point.get("value"))
                 if value is not None:
                     writer.writerow(
                         [
-                            coordinator.config_entry.title,
+                            _csv_text(coordinator.config_entry.title),
                             name,
-                            point.get("date") or point.get("reading_date"),
+                            _csv_text(point.get("date") or point.get("reading_date")),
                             value,
                         ]
                     )

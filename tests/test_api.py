@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import csv
 from datetime import datetime, timedelta, timezone
 import importlib.util
 from pathlib import Path
 import sys
 import types
+from tempfile import TemporaryDirectory
 import unittest
 
 ROOT = Path(__file__).parents[1]
@@ -172,6 +174,37 @@ class HistoryCacheTests(unittest.IsolatedAsyncioTestCase):
 class CurrentMeterSelectionTests(unittest.IsolatedAsyncioTestCase):
     """Verify current values are selected independently for each meter."""
 
+    async def test_all_failed_meter_requests_raise_instead_of_returning_empty(self):
+        client = api.BrunataOnlineClient("user", "password", None)
+        client._build_date_candidates = lambda: ["2026-08-01", "2026-08-02"]
+
+        async def fail(*args, **kwargs):
+            raise api.ClientError("unavailable")
+
+        client._api_get_json = fail
+        with self.assertRaises(api.BrunataConnectionError):
+            await client._get_best_meter_rows()
+
+    async def test_auth_failure_is_preserved_when_no_meter_request_succeeds(self):
+        client = api.BrunataOnlineClient("user", "password", None)
+
+        async def fail(*args, **kwargs):
+            raise api.BrunataAuthError("credentials rejected")
+
+        client._api_get_json = fail
+        with self.assertRaises(api.BrunataAuthError):
+            await client._get_best_meter_rows()
+
+    async def test_non_list_meter_responses_do_not_count_as_success(self):
+        client = api.BrunataOnlineClient("user", "password", None)
+
+        async def invalid(*args, **kwargs):
+            return {"error": "unexpected response"}
+
+        client._api_get_json = invalid
+        with self.assertRaises(api.BrunataConnectionError):
+            await client._get_best_meter_rows()
+
     async def test_uses_newest_valid_reading_per_meter(self) -> None:
         client = api.BrunataOnlineClient("user", "password", None)
         client._build_date_candidates = lambda: ["2026-07-01", "2026-08-01"]
@@ -258,6 +291,19 @@ class CurrentMeterSelectionTests(unittest.IsolatedAsyncioTestCase):
 
 class DebugClientMeterSelectionTests(unittest.TestCase):
     """Keep the standalone export client consistent with the integration."""
+
+    def test_csv_export_neutralizes_formulas_in_all_text_columns(self):
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "meters.csv"
+            debug_client.write_csv(
+                path,
+                [{"placement": "  =1+1", "meter_no": "\tname", "reading_value": 0}],
+            )
+            with path.open(newline="", encoding="utf-8") as stream:
+                row = next(csv.DictReader(stream))
+            self.assertEqual(row["placement"], "'  =1+1")
+            self.assertEqual(row["meter_no"], "'\tname")
+            self.assertEqual(row["reading_value"], "0")
 
     def test_uses_newest_valid_reading_per_meter(self) -> None:
         cold_meter = {"meterId": "cold", "allocationUnit": "K"}

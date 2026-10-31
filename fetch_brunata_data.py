@@ -424,7 +424,16 @@ def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
     with path.open("w", newline="", encoding="utf-8") as fp:
         writer = csv.DictWriter(fp, fieldnames=fieldnames)
         writer.writeheader()
-        writer.writerows(rows)
+        for row in rows:
+            safe_row = {}
+            for key, value in row.items():
+                if isinstance(value, str) and (
+                    value.lstrip().startswith(("=", "+", "-", "@"))
+                    or value.startswith(("\t", "\r", "\n"))
+                ):
+                    value = f"'{value}"
+                safe_row[key] = value
+            writer.writerow(safe_row)
 
 
 def main() -> int:
