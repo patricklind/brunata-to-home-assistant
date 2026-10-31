@@ -5,6 +5,27 @@ releases use `vX.Y.Z-beta.N` and are published as GitHub prereleases.
 
 ## Unreleased
 
+## 1.0.40 - 2026-10-31
+
+### Changed
+
+- Added explicit support for the probatio validation engine used by Home
+  Assistant 2026.11.0b1, retaining voluptuous compatibility for older cores.
+- Pass the config entry explicitly to modern data coordinators so polling and
+  shutdown follow the entry lifecycle; retain the legacy constructor fallback.
+- Removed the deprecated config-flow connection class; the manifest continues
+  to declare the integration as cloud polling.
+- Added pinned Python 3.14 / Home Assistant 2026.11.0b1 compatibility checks for
+  forms, panel schemas and permissions, actions, polling, and HTTP asset routes.
+  Release publication now requires these checks to pass.
+
+### Verification limitations
+
+- Beta API checks use the installed core directly because the current external
+  pytest harness targets stable Home Assistant. Full config-entry smoke tests
+  continue to run against the minimum supported core. Live Brunata login and
+  beta browser rendering are not covered by these automated checks.
+
 ## 1.0.39 - 2026-10-31
 
 ### Fixed

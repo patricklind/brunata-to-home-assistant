@@ -54,10 +54,16 @@ jobs:
       - name: Run Hassfest
         uses: home-assistant/actions/hassfest@master
 
+  home-assistant-beta:
+    name: Home Assistant beta compatibility
+    uses: ./.github/workflows/home-assistant-beta.yml
+    permissions:
+      contents: read
+
   publish_release:
     name: Publish release
     runs-on: ubuntu-latest
-    needs: [quality, hacs, hassfest]
+    needs: [quality, hacs, hassfest, home-assistant-beta]
     steps:
       - name: Check out repository
         uses: actions/checkout@v7.0.1

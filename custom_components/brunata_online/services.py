@@ -6,7 +6,10 @@ import csv
 from io import StringIO
 from typing import Any
 
-import voluptuous as vol
+try:
+    import probatio as vol
+except ImportError:  # Home Assistant versions before the schema migration.
+    import voluptuous as vol
 
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.exceptions import Unauthorized

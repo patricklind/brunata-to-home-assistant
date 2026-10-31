@@ -8,7 +8,11 @@ import logging
 from aiohttp import ClientError
 from homeassistant import config_entries
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-import voluptuous as vol
+
+try:
+    import probatio as vol
+except ImportError:  # Home Assistant versions before the schema migration.
+    import voluptuous as vol
 
 from .api import BrunataAuthError, BrunataConnectionError, BrunataOnlineClient
 from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
@@ -20,7 +24,6 @@ class BrunataOnlineConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Brunata Online."""
 
     VERSION = 2
-    CONNECTION_CLASS = config_entries.CONN_CLASS_CLOUD_POLL
 
     async def async_step_user(self, user_input: dict | None = None):
         errors: dict[str, str] = {}

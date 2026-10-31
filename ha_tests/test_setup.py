@@ -76,4 +76,46 @@ async def test_entry_creates_energy_compatible_entities_and_actions(
         return_response=True,
     )
     assert response["accounts"][0]["meters"][0]["current"] == 12.0
+    assert response["accounts"][0]["title"] == "Home"
+
+    # Real WebSocket validation catches incompatible schema markers after
+    # Home Assistant's migration from voluptuous to probatio.
+    from custom_components.brunata_online.panel import (
+        websocket_update_panel_settings,
+    )
+
+    message = websocket_update_panel_settings._ws_schema(
+        {
+            "id": 1,
+            "type": "brunata_online/panel_settings/update",
+            "settings": {"precision": 3},
+        }
+    )
+    assert message["settings"] == {"precision": 3}
     await hass.async_stop()
+
+
+async def test_user_flow_validates_and_creates_entry(hass) -> None:
+    """Exercise the form schema against the installed Home Assistant core."""
+    from homeassistant import data_entry_flow
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "user"}
+    )
+    assert result["type"] is data_entry_flow.FlowResultType.FORM
+    user_input = result["data_schema"](
+        {"username": "user@example.com", "password": "secret"}
+    )
+    with (
+        patch(
+            "custom_components.brunata_online.api."
+            "BrunataOnlineClient.async_validate_credentials"
+        ),
+        patch("custom_components.brunata_online.async_setup_entry", return_value=True),
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], user_input
+        )
+        await hass.async_block_till_done()
+    assert result["type"] is data_entry_flow.FlowResultType.CREATE_ENTRY
+    assert result["data"] == user_input

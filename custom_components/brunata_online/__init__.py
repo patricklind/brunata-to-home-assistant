@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from inspect import signature
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -100,15 +101,21 @@ class BrunataDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         config_entry: BrunataConfigEntry,
     ) -> None:
         self.client = client
-        # Keep compatibility with the integration's HA 2024.6 minimum while
-        # exposing the entry title to the multi-account panel.
-        self.config_entry = config_entry
+        # Newer cores bind polling and shutdown to the entry explicitly.
+        # Keep the legacy constructor working on the declared HA minimum.
+        entry_kwargs = (
+            {"config_entry": config_entry}
+            if "config_entry" in signature(DataUpdateCoordinator.__init__).parameters
+            else {}
+        )
         super().__init__(
             hass,
             logger=_LOGGER,
             name=DOMAIN,
             update_interval=SCAN_INTERVAL,
+            **entry_kwargs,
         )
+        self.config_entry = config_entry
 
     async def _async_update_data(self) -> dict[str, Any]:
         try:
