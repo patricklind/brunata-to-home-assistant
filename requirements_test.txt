@@ -1,4 +1,5 @@
 pytest-homeassistant-custom-component==0.13.132
-josepy<3
+# acme 2.10 uses ComparableX509, which josepy 2 removed.
+josepy<2
 home-assistant-frontend==20240605.0
 pycares==4.4.0

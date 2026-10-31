@@ -344,7 +344,9 @@ def _sum_current_values(
     for row in rows:
         value = _current_or_history_value(coordinator_data, row)
         if value is None:
-            continue
+            # A partial cumulative total would look like a counter reset and
+            # count the returning meter again in long-term statistics.
+            return None
         total += float(value)
         count += 1
     if count == 0:

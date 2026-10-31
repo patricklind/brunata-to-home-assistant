@@ -378,6 +378,20 @@ python -m black --check custom_components tests fetch_brunata_data.py
 python -m compileall -q custom_components tests fetch_brunata_data.py
 ```
 
+Run the Home Assistant runtime tests in a separate Python 3.12 virtual
+environment so the fast tests' Home Assistant stubs stay isolated:
+
+```bash
+python3.12 -m venv /tmp/brunata-ha
+/tmp/brunata-ha/bin/python -m pip install -r requirements_test.txt
+/tmp/brunata-ha/bin/python -m pytest -q ha_tests
+```
+
+Reports show insufficient history when period anchors are missing or the meter
+counter resets inside the comparison window. Aggregate cumulative sensors return
+an unknown value when a source meter has neither a reading nor a historical
+fallback, so incomplete totals do not create false resets in energy statistics.
+
 The CI workflow additionally runs pre-commit, HACS validation, and Hassfest.
 Fast tests use stubs and fixtures. A separate CI job installs the pinned
 `pytest-homeassistant-custom-component` harness and loads the integration in a

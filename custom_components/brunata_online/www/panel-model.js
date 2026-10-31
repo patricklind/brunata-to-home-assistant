@@ -1,6 +1,10 @@
 function validPoint(point) {
   return (
-    point && Number.isFinite(point.value) && typeof point.date === "string"
+    point &&
+    Number.isFinite(point.value) &&
+    typeof point.date === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(point.date) &&
+    Number.isFinite(Date.parse(`${point.date}T00:00:00Z`))
   );
 }
 
@@ -30,13 +34,19 @@ export function periodPoints(history = [], periodDays = 30) {
 export function consumptionDelta(history = [], periodDays = 30) {
   const points = periodPoints(history, periodDays);
   if (points.length < 2) return null;
+  if (
+    points.some(
+      (point, index) => index && point.value < points[index - 1].value,
+    )
+  )
+    return null;
   const delta = points.at(-1).value - points[0].value;
   return delta >= 0 ? delta : null;
 }
 
 export function comparison(history = [], periodDays = 30) {
   const points = [...history]
-    .filter((point) => Number.isFinite(Number(point.value)) && point.date)
+    .filter(validPoint)
     .sort((a, b) => a.date.localeCompare(b.date));
   if (points.length < 3) return null;
   const end = points.at(-1);
@@ -53,6 +63,15 @@ export function comparison(history = [], periodDays = 30) {
   const currentStart = anchor(periodDays);
   const previousStart = anchor(periodDays * 2);
   if (!currentStart || !previousStart) return null;
+  if (!(previousStart.date < currentStart.date && currentStart.date < end.date))
+    return null;
+  const window = points.filter((point) => point.date >= previousStart.date);
+  if (
+    window.some(
+      (point, index) => index && point.value < window[index - 1].value,
+    )
+  )
+    return null;
   const current = Number(end.value) - Number(currentStart.value);
   const previous = Number(currentStart.value) - Number(previousStart.value);
   if (current < 0 || previous < 0) return null;
@@ -67,6 +86,8 @@ export function comparison(history = [], periodDays = 30) {
 }
 
 export function budgetProgress(consumed, budget) {
+  if (consumed === null || consumed === undefined || consumed === "")
+    return null;
   consumed = Number(consumed);
   budget = Number(budget);
   if (!Number.isFinite(consumed) || !Number.isFinite(budget)) return null;
@@ -77,6 +98,12 @@ export function budgetProgress(consumed, budget) {
     remaining: Math.max(budget - consumed, 0),
     percent: Math.round((consumed / budget) * 1000) / 10,
   };
+}
+
+export function csvCell(value) {
+  let text = String(value ?? "");
+  if (/^\s*[=+\-@]/.test(text) || /^[\t\r\n]/.test(text)) text = `'${text}`;
+  return `"${text.replaceAll('"', '""')}"`;
 }
 
 export function groupCompatibleMeters(meters = []) {

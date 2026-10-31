@@ -65,6 +65,32 @@ class ConsumptionReportTests(unittest.TestCase):
         )
         self.assertIsNone(analytics.budget_progress(25, 0))
 
+    def test_stale_history_is_not_reported_as_zero_consumption(self) -> None:
+        report = analytics.consumption_report(
+            [
+                {"date": "2026-07-31", "value": 100},
+                {"date": "2026-08-07", "value": 112},
+                {"date": "2026-08-14", "value": 130},
+            ],
+            period="week",
+            today=date(2026, 10, 31),
+        )
+        self.assertEqual(report["status"], "insufficient_history")
+        self.assertIsNone(report["current"])
+
+    def test_detects_reset_even_when_end_value_has_recovered(self) -> None:
+        report = analytics.consumption_report(
+            [
+                {"date": "2026-07-31", "value": 100},
+                {"date": "2026-08-07", "value": 112},
+                {"date": "2026-08-10", "value": 1},
+                {"date": "2026-08-14", "value": 130},
+            ],
+            period="week",
+            today=date(2026, 8, 14),
+        )
+        self.assertEqual(report["status"], "insufficient_history")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+import csv
+from io import StringIO
 from pathlib import Path
 import sys
 import types
@@ -79,6 +81,18 @@ class ServiceResponseTests(unittest.TestCase):
         self.assertEqual(response["filename"], "brunata-report.csv")
         self.assertIn("'=private", response["content"])
         self.assertNotIn("\nHome,=private", response["content"])
+
+    def test_csv_protects_all_external_text_fields(self) -> None:
+        for value in ("=1+1", "+1+1", "-1+1", "@SUM(A1)", "  =1+1", "\tname"):
+            with self.subTest(value=value):
+                self.coordinator.config_entry.title = value
+                self.coordinator.data["meters"][0]["meter"]["placement"] = value
+                points = self.coordinator.data["meter_history_30d"]["one|1|42|K"]
+                points[0]["date"] = value
+                response = services.build_csv_response([self.coordinator])
+                rows = list(csv.reader(StringIO(response["content"])))
+                self.assertEqual(rows[1][:3], [f"'{value}"] * 3)
+                self.assertEqual(float(rows[1][3]), 10.0)
 
 
 if __name__ == "__main__":

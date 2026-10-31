@@ -9,6 +9,7 @@ import {
   budgetProgress,
   comparison,
   consumptionDelta,
+  csvCell,
   formatReadingDate,
   groupCompatibleMeters,
   periodPoints,
@@ -178,6 +179,7 @@ class BrunataOnlinePanel extends HTMLElement {
       const reports = group
         .map((meter) => comparison(meter.history, days))
         .filter(Boolean);
+      const complete = reports.length === group.length;
       const current = reports.reduce((sum, item) => sum + item.current, 0);
       const previous = reports.reduce((sum, item) => sum + item.previous, 0);
       const change =
@@ -194,10 +196,12 @@ class BrunataOnlinePanel extends HTMLElement {
                 meter.unit === "m³",
             )
           : group;
-      const monthly = budgetMeters
-        .map((meter) => comparison(meter.history, 30)?.current)
-        .filter((value) => value !== undefined)
-        .reduce((sum, value) => sum + value, 0);
+      const monthlyReports = budgetMeters.map((meter) =>
+        comparison(meter.history, 30),
+      );
+      const monthly = monthlyReports.every(Boolean)
+        ? monthlyReports.reduce((sum, report) => sum + report.current, 0)
+        : null;
       const budgetAmount =
         groupIndex === waterBudgetIndex
           ? this._settings.waterBudget
@@ -207,8 +211,8 @@ class BrunataOnlinePanel extends HTMLElement {
       const budget = budgetProgress(monthly, budgetAmount);
       return `<article class="report"><header><b>${this._medium(
         medium,
-      )}</b><strong>${reports.length ? this._format(current, unit) : "–"}</strong></header><p>${
-        reports.length
+      )}</b><strong>${complete ? this._format(current, unit) : "–"}</strong></header><p>${
+        complete
           ? `${this._t("comparedWithPrevious")}: ${
               change === null ? "–" : `${change > 0 ? "+" : ""}${change}%`
             }`
@@ -239,16 +243,11 @@ class BrunataOnlinePanel extends HTMLElement {
 
   _downloadCsv(meters) {
     const lines = ["meter,medium,unit,date,value"];
-    const safeCell = (value) => {
-      value = String(value ?? "");
-      if (/^[=+\-@]/.test(value)) value = `'${value}`;
-      return `"${value.replaceAll('"', '""')}"`;
-    };
     for (const meter of meters) {
       for (const point of meter.history || []) {
         lines.push(
           [meter.name, meter.medium, meter.unit, point.date, point.value]
-            .map(safeCell)
+            .map(csvCell)
             .join(","),
         );
       }
